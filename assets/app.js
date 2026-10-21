@@ -85,7 +85,8 @@ async function pushRemote(data, retry=true){
     }
     const body = { message: `PDM : mise à jour ${new Date().toLocaleString("fr-FR")}`, content: b64encode(JSON.stringify(data, null, 1)), branch: c.branch };
     if(remoteSha) body.sha = remoteSha;
-    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${c.path}`, { method:"PUT", headers: {...apiHeaders(c), "Content-Type":"application/json"}, body: JSON.stringify(body) });
+    const payload = JSON.stringify(body);
+    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${c.path}`, { method:"PUT", headers: {...apiHeaders(c), "Content-Type":"application/json"}, body: payload, keepalive: payload.length < 60000 });
     if((r.status === 409 || r.status === 422) && retry){ remoteSha = null; return pushRemote(data, false); }
     if(!r.ok){
       const msg = r.status === 401 ? "Clé GitHub refusée" : r.status === 404 ? "Repo ou branche introuvable" : "Erreur GitHub " + r.status;
@@ -132,7 +133,7 @@ function persistLocal(dirty){
     if(dirty) localStorage.setItem(DIRTY_KEY, "1");
   } catch(e){}
 }
-function schedulePush(ms=900){
+function schedulePush(ms=300){
   clearTimeout(pushTimer);
   pushTimer = setTimeout(() => pushRemote(DATA), ms);
 }
@@ -142,7 +143,29 @@ function save(msg){
   if(getCfg().token){ setSync("busy"); schedulePush(); } else setSync("local");
   if(msg) toast(msg);
 }
-window.addEventListener("beforeunload", () => { if(pushTimer && getCfg().token){ clearTimeout(pushTimer); pushRemote(DATA); } });
+function flushNow(){
+  if(!DATA || !getCfg().token) return;
+  if(pushTimer || localStorage.getItem(DIRTY_KEY) === "1"){ clearTimeout(pushTimer); pushTimer = null; pushRemote(DATA); }
+}
+async function pullIfNewer(){
+  if(!DATA || !getCfg().token || document.visibilityState === "hidden") return;
+  if(pushTimer || localStorage.getItem(DIRTY_KEY) === "1"){ clearTimeout(pushTimer); pushTimer = null; await pushRemote(DATA); return; }
+  try{
+    const remote = await fetchRemote();
+    if(remote && (remote.updatedAt || "") > (DATA.updatedAt || "")){
+      DATA = remote; persistLocal(false); setSync("ok", "Mis à jour");
+      const a = document.activeElement;
+      if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.value !== a.defaultValue) return; /* ne coupe pas une saisie en cours */
+      location.reload();
+    }
+  }catch(e){}
+}
+document.addEventListener("visibilitychange", () => { document.visibilityState === "hidden" ? flushNow() : pullIfNewer(); });
+window.addEventListener("pagehide", flushNow);
+window.addEventListener("beforeunload", flushNow);
+window.addEventListener("focus", pullIfNewer);
+window.addEventListener("online", pullIfNewer);
+setInterval(pullIfNewer, 20000);
 
 /* ---------- calculs poids ---------- */
 function weightsAsc(){ return [...DATA.weights].sort((a,b) => a.date.localeCompare(b.date)); }
