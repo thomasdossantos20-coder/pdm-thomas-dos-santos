@@ -266,3 +266,53 @@ tr.editing td{background:var(--panel-2)}
   .leaf{display:none}
   .gauge-fill{transition:none}
 }
+
+/* ---------- Armes ninja & gardien ---------- */
+h2::before{
+  content:"";display:inline-block;width:.8em;height:.8em;margin-right:.4em;vertical-align:-.05em;
+  background:url(shuriken.svg) center/contain no-repeat;
+}
+.rank::before{content:"";width:16px;height:16px;background:url(shuriken.svg) center/contain no-repeat}
+.hero .ninja{
+  position:absolute;right:-6px;bottom:-4px;width:min(42%,230px);pointer-events:none;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));
+}
+.hero > *:not(.ninja):not(.kunai-stuck){position:relative;z-index:1}
+.hero .gauge{max-width:58%}
+@media (max-width:600px){
+  .hero .ninja{width:38%;opacity:.95}
+  .hero .gauge{max-width:100%}
+  .hero{padding-bottom:150px}
+}
+.gauge{position:relative}
+.gauge-kunai{
+  position:absolute;top:-6px;width:74px;height:15px;margin-left:-70px;
+  background:url(kunai.svg) center/contain no-repeat;
+  transition:left .9s cubic-bezier(.2,.8,.2,1);
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
+}
+.kunai-stuck{
+  position:absolute;top:22px;right:24px;width:110px;height:22px;z-index:2;
+  background:url(kunai.svg) center/contain no-repeat;transform:rotate(-14deg);
+  animation:throw .55s cubic-bezier(.3,1.4,.5,1) .3s both;
+}
+@keyframes throw{
+  from{transform:translateX(-120vw) rotate(-14deg)}
+  to{transform:translateX(0) rotate(-14deg)}
+}
+.divider-kunai{
+  display:flex;align-items:center;gap:12px;margin:34px 0 0;
+}
+.divider-kunai::before,.divider-kunai::after{content:"";flex:1;height:1px;background:var(--line)}
+.divider-kunai span{width:120px;height:24px;background:url(kunai.svg) center/contain no-repeat}
+.sync[data-s="busy"] i{
+  width:12px;height:12px;border-radius:0;background:url(shuriken.svg) center/contain no-repeat;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chip.last::before{content:"";width:10px;height:10px;background:url(shuriken.svg) center/contain no-repeat}
+@media (prefers-reduced-motion:reduce){
+  .kunai-stuck{animation:none}
+  .sync[data-s="busy"] i{animation:none}
+  .gauge-kunai{transition:none}
+}

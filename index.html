@@ -20,12 +20,15 @@
 <main>
   <div class="grid grid-hero">
     <section class="panel hero" aria-labelledby="h-now">
+      <span class="kunai-stuck" aria-hidden="true"></span>
+      <img class="ninja" src="assets/ninja.svg" alt="" aria-hidden="true">
       <h1 id="h-now" style="font-size:20px;font-family:var(--body);font-weight:700;color:var(--muted)">Poids actuel</h1>
       <div class="kg" id="kg-now">—</div>
       <div class="when" id="kg-when"></div>
       <div id="rank"></div>
       <div class="gauge">
         <div class="gauge-bar" role="progressbar" aria-label="Progression vers l'objectif" aria-valuemin="0" aria-valuemax="100" id="gauge"><div class="gauge-fill" style="width:0"></div></div>
+        <span class="gauge-kunai" aria-hidden="true" style="left:0"></span>
         <div class="gauge-legend"><span id="g-start"></span><span id="g-goal"></span></div>
       </div>
     </section>
@@ -45,6 +48,7 @@
     </section>
   </div>
 
+  <div class="divider-kunai" aria-hidden="true"><span></span></div>
   <section class="section" aria-labelledby="h-stats">
     <h2 id="h-stats">Où tu en es</h2>
     <div class="grid grid-2">
@@ -54,6 +58,7 @@
     </div>
   </section>
 
+  <div class="divider-kunai" aria-hidden="true"><span></span></div>
   <section class="section" aria-labelledby="h-sess">
     <h2 id="h-sess">Séances</h2>
     <div class="grid grid-3" id="sessions" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div>
@@ -85,7 +90,7 @@
     const rank = pct >= 100 ? "Objectif atteint, fixe le suivant" : pct >= 67 ? "Rang Jônin" : pct >= 34 ? "Rang Chûnin" : "Rang Genin";
     $("#rank").innerHTML = `<span class="rank">${rank} · ${Math.round(pct)} %</span>`;
     const g = $("#gauge"); g.setAttribute("aria-valuenow", Math.round(pct));
-    requestAnimationFrame(() => g.firstElementChild.style.width = pct + "%");
+    requestAnimationFrame(() => { g.firstElementChild.style.width = pct + "%"; document.querySelector(".gauge-kunai").style.left = Math.max(pct, 18) + "%"; });
     $("#g-start").textContent = first ? `Départ ${fmtKg(first.kg)} kg` : "";
     $("#g-goal").textContent = `${D.profile.goalLabel || "Objectif " + fmtKg(goal) + " kg"}`;
 
