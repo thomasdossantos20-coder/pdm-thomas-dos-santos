@@ -50,9 +50,9 @@ function setSync(s, label){
   syncState = s;
   const el = $(".sync"); if(!el) return;
   el.dataset.s = s;
-  const txt = label || ({ok:"Sauvegardé", busy:"Sauvegarde…", err:"Erreur de sauvegarde", local:"Sur cet appareil"})[s];
+  const txt = label || ({ok:"Sauvegardé", busy:"Sauvegarde…", err:"Erreur de sauvegarde", local:"Lecture seule"})[s];
   el.querySelector("span").textContent = txt;
-  el.title = s === "local" ? "Ajoute ta clé GitHub dans Réglages pour synchroniser PC et téléphone" : txt;
+  el.title = s === "local" ? "Lecture seule. Propriétaire : colle ta clé GitHub dans Réglages pour modifier" : txt;
 }
 
 /* ---------- GitHub ---------- */
@@ -124,7 +124,7 @@ async function load(){
   } else {
     DATA = local;
   }
-  if(!getCfg().token){ setSync("local"); keyBanner(); }
+  if(!getCfg().token) setSync("local");
   return DATA;
 }
 function persistLocal(dirty){
@@ -193,6 +193,7 @@ const PAGES = [
   ["index.html","Accueil"],["poids.html","Poids"],["programme.html","Programme"],["archives.html","Archives"],["dojo.html","Dojo"]
 ];
 function renderShell(){
+  if(!getCfg().token && !location.pathname.endsWith("reglages.html")) document.documentElement.classList.add("readonly");
   const here = location.pathname.split("/").pop() || "index.html";
   const header = document.createElement("header");
   header.className = "topbar";
@@ -333,7 +334,7 @@ function exCard(ex, gym, defGym){
     <label class="f" style="min-width:0">Pour la prochaine fois
       <textarea class="next-note" rows="2">${esc(ex.note)}</textarea>
     </label>
-    <div style="display:flex;gap:2px;justify-content:flex-end">
+    <div class="ex-actions" style="display:flex;gap:2px;justify-content:flex-end">
       <button class="icon-btn" data-act="move-up" aria-label="Monter">↑</button>
       <button class="icon-btn" data-act="move-down" aria-label="Descendre">↓</button>
       <button class="icon-btn" data-act="edit-ex">Modifier</button>

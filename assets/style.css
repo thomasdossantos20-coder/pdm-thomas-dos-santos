@@ -319,3 +319,13 @@ h2::before{
 
 .key-banner{background:#5A1F1F;color:#FFD6D6;border-bottom:1px solid var(--loss);padding:10px 16px;text-align:center;font-weight:700;font-size:14px}
 .key-banner a{color:#fff}
+
+/* ---------- Lecture seule (visiteurs sans clé) ---------- */
+.readonly #quick, .readonly #h-add, .readonly #stale,
+.readonly section[aria-labelledby="h-add"]:not(:has(#quote)),
+.readonly #add-mes, .readonly [data-mdel],
+.readonly td.actions, .readonly #tbl th:last-child,
+.readonly .add-load, .readonly .chip button, .readonly .ex-actions,
+.readonly [data-act="add-ex"], .readonly .key-banner{display:none !important}
+.readonly .next-note{pointer-events:none;background:var(--panel-2);color:var(--text)}
+.readonly .ex label.f:has(textarea:placeholder-shown){display:none}
