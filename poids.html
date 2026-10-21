@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Poids · PDM</title>
+<meta name="theme-color" content="#151C2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <h1>Poids</h1>
+  <p class="lede">Chaque pesée du dimanche, avec ta note de la semaine. La ligne verte lisse les variations d'eau et de repas : c'est elle qu'il faut regarder.</p>
+
+  <section class="panel" aria-labelledby="h-chart">
+    <div class="toolbar">
+      <h2 id="h-chart" style="margin:0">Courbe</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="seg" role="group" aria-label="Période" id="range">
+          <button data-r="30">1 mois</button><button data-r="90">3 mois</button><button data-r="180">6 mois</button><button data-r="0" aria-pressed="true">Tout</button>
+        </div>
+        <div class="seg" role="group" aria-label="Affichage"><button id="t-avg" aria-pressed="true">Moyenne</button><button id="t-goal" aria-pressed="false">Objectif</button></div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div class="stats" id="range-stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:14px"></div>
+  </section>
+
+  <section class="panel section" aria-labelledby="h-add">
+    <h2 id="h-add">Ajouter une pesée</h2>
+    <form id="add" class="form-row">
+      <label class="f" style="max-width:180px">Date<input type="date" name="date" required></label>
+      <label class="f" style="max-width:140px">Poids (kg)<input name="kg" inputmode="decimal" placeholder="72,1" required></label>
+      <label class="f" style="flex:3;min-width:220px">Note<input name="note" placeholder="Comment s'est passée la semaine ?"></label>
+      <button class="btn" type="submit">Enregistrer</button>
+    </form>
+  </section>
+
+  <section class="section" aria-labelledby="h-hist">
+    <div class="toolbar">
+      <h2 id="h-hist" style="margin:0">Historique</h2>
+      <button class="btn ghost sm" id="csv">Exporter en CSV</button>
+    </div>
+    <div class="panel">
+      <div class="form-row" style="margin-bottom:12px">
+        <label class="f" style="flex:2">Chercher dans les notes<input type="search" id="q" placeholder="shaker, padel, fast-food…"></label>
+        <label class="f">Mois<select id="month"><option value="">Tous</option></select></label>
+        <label class="f">Variation<select id="dir"><option value="">Toutes</option><option value="up">Hausses</option><option value="down">Baisses</option></select></label>
+      </div>
+      <div class="table-wrap">
+        <table class="cards" id="tbl">
+          <thead><tr>
+            <th><button data-sort="date">Date</button></th>
+            <th><button data-sort="kg">Poids</button></th>
+            <th><button data-sort="delta">Évolution</button></th>
+            <th>Note</th><th><span class="sr-only" style="position:absolute;left:-9999px">Actions</span></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted" id="count" style="margin:10px 0 0;font-size:14px"></p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-mes">
+    <h2 id="h-mes">Mensurations</h2>
+    <div class="panel">
+      <div id="mes"></div>
+      <form id="add-mes" class="form-row" style="margin-top:12px">
+        <label class="f">Mesure<input name="name" list="mes-names" placeholder="Tour de bras" required></label>
+        <datalist id="mes-names"><option>Tour de bras</option><option>Tour de taille</option><option>Tour de poitrine</option><option>Tour de cuisse</option></datalist>
+        <label class="f" style="max-width:120px">Valeur (cm)<input name="value" inputmode="decimal" required></label>
+        <label class="f" style="max-width:180px">Date<input type="date" name="date"></label>
+        <label class="f" style="flex:2">Note<input name="note" placeholder="Contracté, à froid…"></label>
+        <button class="btn ghost" type="submit">Ajouter</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<script src="assets/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+(async function(){
+  const P = window.PDM, { $, $$, esc, fmtKg, fmtDelta, fmtDate, todayISO, num } = P;
+  let chart, range = 0, showAvg = true, showGoal = false, sort = { key: "date", dir: -1 }, editing = null;
+  const MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  function inRange(){
+    const asc = P.weightsAsc(); if(!range || !asc.length) return asc;
+    const lastT = new Date(todayISO()).getTime();
+    return asc.filter(w => lastT - new Date(w.date).getTime() <= range*864e5);
+  }
+  function drawChart(){
+    const pts = inRange();
+    if(chart) chart.destroy();
+    chart = window.weightChart($("#chart"), pts, { avg: showAvg, goal: showGoal ? P.data.profile.goalKg : null, showGoalInRange: showGoal });
+    const s = $("#range-stats");
+    if(!pts.length){ s.innerHTML = `<div class="empty" style="grid-column:1/-1">Aucune pesée sur cette période.</div>`; return; }
+    const kgs = pts.map(w => w.kg), mean = kgs.reduce((a,b)=>a+b,0)/kgs.length, d = kgs[kgs.length-1]-kgs[0];
+    const cls = d > .05 ? "up" : d < -.05 ? "down" : "flat";
+    s.innerHTML = [[fmtKg(Math.min(...kgs))+" kg","plus bas"],[fmtKg(Math.max(...kgs))+" kg","plus haut"],[fmtKg(mean)+" kg","moyenne"],[`<span class="${cls}">${fmtDelta(d)} kg</span>`,"sur la période"]]
+      .map(([v,l]) => `<div class="stat"><b>${v}</b><small>${l}</small></div>`).join("");
+  }
+
+  function drawTable(){
+    const all = P.withDeltas();
+    const months = [...new Set(all.map(w => w.date.slice(0,7)))].sort().reverse();
+    const mSel = $("#month"), cur = mSel.value;
+    mSel.innerHTML = `<option value="">Tous</option>` + months.map(m => `<option value="${m}">${MONTHS[+m.slice(5)-1]} ${m.slice(0,4)}</option>`).join("");
+    mSel.value = cur;
+    const q = $("#q").value.trim().toLowerCase(), dir = $("#dir").value;
+    let rows = all.filter(w => (!q || (w.note||"").toLowerCase().includes(q)) && (!cur || w.date.startsWith(cur))
+      && (!dir || (dir === "up" ? w.delta > 0 : w.delta < 0)));
+    rows.sort((a,b) => { const x = a[sort.key], y = b[sort.key]; if(x == null) return 1; if(y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; });
+    $$("[data-sort]").forEach(b => { b.toggleAttribute("data-active", b.dataset.sort === sort.key); b.textContent = b.textContent.replace(/ [↑↓]$/,"") + (b.dataset.sort === sort.key ? (sort.dir < 0 ? " ↓" : " ↑") : ""); });
+    const cls = d => d == null ? "flat" : d > 0 ? "up" : d < 0 ? "down" : "flat";
+    $("#tbl tbody").innerHTML = rows.map(w => editing === w.id ? `
+      <tr class="editing" data-id="${w.id}">
+        <td><input type="date" name="date" value="${w.date}"></td>
+        <td><input name="kg" inputmode="decimal" value="${String(w.kg).replace(".",",")}" style="width:90px"></td>
+        <td class="num"></td>
+        <td class="note"><textarea name="note" rows="2">${esc(w.note)}</textarea></td>
+        <td class="actions" style="white-space:nowrap"><button class="btn sm" data-act="ok">Valider</button> <button class="icon-btn" data-act="cancel">Annuler</button></td>
+      </tr>` : `
+      <tr data-id="${w.id}">
+        <td class="num">${fmtDate(w.date)}</td>
+        <td class="num"><b>${fmtKg(w.kg)}</b> kg</td>
+        <td class="num ${cls(w.delta)}">${w.delta == null ? "départ" : fmtDelta(w.delta)}</td>
+        <td class="note">${esc(w.note) || "<span style='opacity:.5'>—</span>"}</td>
+        <td class="actions" style="white-space:nowrap"><button class="icon-btn" data-act="edit" aria-label="Modifier la pesée du ${fmtDate(w.date)}">Modifier</button><button class="icon-btn danger" data-act="del" aria-label="Supprimer la pesée du ${fmtDate(w.date)}">×</button></td>
+      </tr>`).join("") || `<tr><td colspan="5" class="empty">Aucune pesée ne correspond à ces filtres.</td></tr>`;
+    $("#count").textContent = `${rows.length} pesée${rows.length>1?"s":""} affichée${rows.length>1?"s":""} sur ${all.length}.`;
+  }
+
+  function drawMes(){
+    const m = [...(P.data.measurements||[])].sort((a,b) => (b.date||"").localeCompare(a.date||""));
+    $("#mes").innerHTML = m.length ? `<div class="table-wrap"><table><thead><tr><th>Mesure</th><th>Valeur</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody>${
+      m.map(x => `<tr data-mid="${x.id}"><td>${esc(x.name)}</td><td class="num"><b>${P.fmtLoad(x.value)}</b> ${esc(x.unit||"cm")}</td><td class="num">${x.date ? fmtDate(x.date) : "non datée"}</td><td class="note">${esc(x.note)}</td><td><button class="icon-btn danger" data-mdel aria-label="Supprimer">×</button></td></tr>`).join("")
+    }</tbody></table></div>` : `<p class="empty">Aucune mensuration notée.</p>`;
+  }
+  function redraw(){ drawChart(); drawTable(); drawMes(); }
+
+  // interactions
+  $$("#range button").forEach(b => b.onclick = () => { range = +b.dataset.r; $$("#range button").forEach(x => x.setAttribute("aria-pressed", x === b)); drawChart(); });
+  $("#t-avg").onclick = e => { showAvg = !showAvg; e.currentTarget.setAttribute("aria-pressed", showAvg); drawChart(); };
+  $("#t-goal").onclick = e => { showGoal = !showGoal; e.currentTarget.setAttribute("aria-pressed", showGoal); drawChart(); };
+  $$("[data-sort]").forEach(b => b.onclick = () => { sort = { key: b.dataset.sort, dir: sort.key === b.dataset.sort ? -sort.dir : -1 }; drawTable(); });
+  ["#q","#month","#dir"].forEach(s => $(s).addEventListener("input", drawTable));
+
+  $("#tbl").onclick = e => {
+    const b = e.target.closest("[data-act]"); if(!b) return;
+    const tr = b.closest("tr"), w = P.data.weights.find(x => x.id === tr.dataset.id);
+    if(b.dataset.act === "edit"){ editing = w.id; drawTable(); $("input[name=kg]", $("#tbl tr.editing")).focus(); }
+    if(b.dataset.act === "cancel"){ editing = null; drawTable(); }
+    if(b.dataset.act === "ok"){
+      const kg = num($("[name=kg]", tr).value), date = $("[name=date]", tr).value;
+      if(kg == null || !date){ P.toast("Date et poids obligatoires"); return; }
+      w.kg = kg; w.date = date; w.note = $("[name=note]", tr).value.trim(); editing = null;
+      P.save("Pesée modifiée"); redraw();
+    }
+    if(b.dataset.act === "del" && confirm(`Supprimer la pesée du ${fmtDate(w.date)} (${fmtKg(w.kg)} kg) ?`)){
+      P.data.weights = P.data.weights.filter(x => x !== w); P.save("Pesée supprimée"); redraw();
+    }
+  };
+
+  const f = $("#add"); f.date.value = todayISO();
+  f.onsubmit = e => {
+    e.preventDefault();
+    const kg = num(f.kg.value); if(kg == null || kg < 30 || kg > 200){ P.toast("Poids invalide"); return; }
+    const ex = P.data.weights.find(w => w.date === f.date.value);
+    if(ex && !confirm(`Une pesée existe déjà le ${fmtDate(ex.date)}. La remplacer ?`)) return;
+    if(ex){ ex.kg = kg; ex.note = f.note.value.trim(); } else P.data.weights.push({ id: P.uid("w"), date: f.date.value, kg, note: f.note.value.trim() });
+    P.save(`Pesée enregistrée : ${fmtKg(kg)} kg`); f.kg.value = ""; f.note.value = ""; redraw();
+  };
+
+  const fm = $("#add-mes");
+  fm.onsubmit = e => {
+    e.preventDefault(); const v = num(fm.value.value); if(v == null){ P.toast("Valeur invalide"); return; }
+    (P.data.measurements = P.data.measurements || []).push({ id: P.uid("m"), name: fm.name.value.trim(), value: v, unit: "cm", date: fm.date.value || todayISO(), note: fm.note.value.trim() });
+    P.save("Mensuration ajoutée"); fm.reset(); drawMes();
+  };
+  $("#mes").onclick = e => {
+    const b = e.target.closest("[data-mdel]"); if(!b) return;
+    const id = b.closest("tr").dataset.mid;
+    if(confirm("Supprimer cette mensuration ?")){ P.data.measurements = P.data.measurements.filter(x => x.id !== id); P.save("Mensuration supprimée"); drawMes(); }
+  };
+
+  $("#csv").onclick = () => {
+    const rows = [["date","poids_kg","evolution_kg","note"], ...P.withDeltas().map(w => [w.date, w.kg, w.delta ?? "", (w.note||"").replace(/"/g,'""')])];
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(";")).join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿"+csv], {type:"text/csv"})); a.download = `pdm-pesees-${todayISO()}.csv`; a.click();
+  };
+
+  await P.load(); redraw();
+})();
+</script>
+</body>
+</html>

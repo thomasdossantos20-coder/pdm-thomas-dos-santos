@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dojo · PDM</title>
+<meta name="theme-color" content="#151C2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <h1>Dojo</h1>
+  <p class="lede">Le circuit abdos, tes recettes de prise de masse et tes repères nutrition.</p>
+
+  <section class="panel" aria-labelledby="h-nut">
+    <h2 id="h-nut">Repères du jour</h2>
+    <div class="stats" id="nut" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div>
+  </section>
+
+  <div class="grid grid-2 section">
+    <section class="panel" aria-labelledby="h-abs">
+      <h2 id="h-abs">Circuit abdos</h2>
+      <p class="muted" id="abs-meta" style="margin-top:-6px"></p>
+      <div class="moves" id="moves"></div>
+      <p class="muted" style="font-size:14px;margin-bottom:0" id="abs-goals"></p>
+    </section>
+    <section aria-labelledby="h-rec">
+      <h2 id="h-rec">Recettes</h2>
+      <div class="grid" id="recipes"></div>
+    </section>
+  </div>
+</main>
+<script src="assets/app.js"></script>
+<script>
+(async function(){
+  const P = window.PDM, { $, esc } = P;
+  await P.load(); const D = P.data;
+  $("#nut").innerHTML = [[D.nutrition.kcal,"calories"],[D.nutrition.protein,"protéines"]].map(([v,l]) => `<div class="stat"><b>${esc(v)}</b><small>${l}</small></div>`).join("");
+  $("#abs-meta").textContent = `${D.abs.freq}. ${D.abs.duration}.`;
+  $("#moves").innerHTML = D.abs.moves.map(m => `<div class="move"><div><b>${esc(m.name)}</b><ul>${m.cues.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div><span class="dose">${esc(m.dose)}</span></div>`).join("");
+  $("#abs-goals").textContent = "Objectif : " + D.abs.goals.join(", ").toLowerCase() + ".";
+  $("#recipes").innerHTML = D.recipes.map(r => `<article class="panel recipe"><h3>${esc(r.name)}</h3><div class="muted" style="font-size:14px">${esc(r.yield)}</div>
+    <div class="macro"><span>${esc(r.kcal)}</span><span>${esc(r.protein)} protéines</span></div>
+    <ul>${r.ingredients.map(i => `<li>${esc(i)}</li>`).join("")}</ul>
+    ${r.detail.length ? `<details><summary class="muted" style="cursor:pointer">Détail des calories</summary><ul>${r.detail.map(i => `<li>${esc(i)}</li>`).join("")}</ul></details>` : ""}</article>`).join("");
+})();
+</script>
+</body>
+</html>

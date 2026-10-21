@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PDM Thomas</title>
+<meta name="theme-color" content="#151C2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <div class="grid grid-hero">
+    <section class="panel hero" aria-labelledby="h-now">
+      <h1 id="h-now" style="font-size:20px;font-family:var(--body);font-weight:700;color:var(--muted)">Poids actuel</h1>
+      <div class="kg" id="kg-now">—</div>
+      <div class="when" id="kg-when"></div>
+      <div id="rank"></div>
+      <div class="gauge">
+        <div class="gauge-bar" role="progressbar" aria-label="Progression vers l'objectif" aria-valuemin="0" aria-valuemax="100" id="gauge"><div class="gauge-fill" style="width:0"></div></div>
+        <div class="gauge-legend"><span id="g-start"></span><span id="g-goal"></span></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-add">
+      <h2 id="h-add">Nouvelle pesée</h2>
+      <div id="stale"></div>
+      <form id="quick" class="grid" style="gap:10px">
+        <div class="form-row">
+          <label class="f">Date<input type="date" name="date" required></label>
+          <label class="f">Poids (kg)<input name="kg" inputmode="decimal" placeholder="72,1" required></label>
+        </div>
+        <label class="f">Note de la semaine<textarea name="note" rows="2" placeholder="Shakers, petit-déj, séances, digestion…"></textarea></label>
+        <div><button class="btn" type="submit">Enregistrer la pesée</button></div>
+      </form>
+      <div class="quote" id="quote" style="margin-top:18px"></div>
+    </section>
+  </div>
+
+  <section class="section" aria-labelledby="h-stats">
+    <h2 id="h-stats">Où tu en es</h2>
+    <div class="grid grid-2">
+      <div class="stats" id="stats"></div>
+      <div class="panel"><div class="chart-wrap" style="height:220px"><canvas id="mini"></canvas></div>
+        <p class="muted" style="margin:10px 0 0;font-size:14px">Les 12 dernières pesées. <a href="poids.html">Tout l'historique</a></p></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-sess">
+    <h2 id="h-sess">Séances</h2>
+    <div class="grid grid-3" id="sessions" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div>
+  </section>
+</main>
+
+<script src="assets/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+(async function(){
+  const P = window.PDM, { $, esc, fmtKg, fmtDelta, fmtDate, todayISO, num, daysBetween } = P;
+  const QUOTES = [
+    "La constance bat l'intensité. Une semaine propre vaut plus qu'un dimanche héroïque.",
+    "Le plateau, c'est la balance qui te demande une assiette de plus.",
+    "Shaker, petit-déj, séance. Trois cases, tous les jours.",
+    "Une pesée ratée n'efface pas un mois de travail. Une semaine lâchée, si.",
+    "Le talent se fabrique à la salle et à table, pas dans les excuses.",
+    "Mille répétitions propres valent mieux qu'une seule bâclée.",
+    "Tu n'as pas besoin de motivation. Tu as besoin d'une routine que tu respectes quand elle manque."
+  ];
+  let mini;
+  function render(){
+    const D = P.data, asc = P.weightsAsc(), last = asc[asc.length-1], first = asc[0], prev = asc[asc.length-2];
+    const goal = D.profile.goalKg;
+    $("#kg-now").innerHTML = last ? `${fmtKg(last.kg)}<span>kg</span>` : "—";
+    $("#kg-when").textContent = last ? `Pesée du ${fmtDate(last.date)}` + (prev ? ` · ${fmtDelta(last.kg - prev.kg)} kg sur la semaine` : "") : "Aucune pesée pour l'instant.";
+    const pct = last && first ? Math.max(0, Math.min(100, (last.kg - first.kg) / (goal - first.kg) * 100)) : 0;
+    const rank = pct >= 100 ? "Objectif atteint, fixe le suivant" : pct >= 67 ? "Rang Jônin" : pct >= 34 ? "Rang Chûnin" : "Rang Genin";
+    $("#rank").innerHTML = `<span class="rank">${rank} · ${Math.round(pct)} %</span>`;
+    const g = $("#gauge"); g.setAttribute("aria-valuenow", Math.round(pct));
+    requestAnimationFrame(() => g.firstElementChild.style.width = pct + "%");
+    $("#g-start").textContent = first ? `Départ ${fmtKg(first.kg)} kg` : "";
+    $("#g-goal").textContent = `${D.profile.goalLabel || "Objectif " + fmtKg(goal) + " kg"}`;
+
+    const gap = last ? daysBetween(last.date, todayISO()) : null;
+    $("#stale").innerHTML = gap != null && gap > 9
+      ? `<div class="alert" style="margin-bottom:12px">Dernière pesée il y a ${gap} jours. Sans pesée, la courbe ne te dit plus rien : pèse-toi dimanche matin, à jeun.</div>` : "";
+
+    // stats
+    const n = asc.length;
+    const avg = a => a.reduce((s,w)=>s+w.kg,0)/a.length;
+    const a4 = n >= 4 ? avg(asc.slice(-4)) : null, p4 = n >= 8 ? avg(asc.slice(-8,-4)) : null;
+    const trend = a4 != null && p4 != null ? a4 - p4 : null;
+    const cls = d => d == null ? "flat" : d > 0.05 ? "up" : d < -0.05 ? "down" : "flat";
+    const total = last && first ? last.kg - first.kg : null;
+    $("#stats").innerHTML = [
+      [total, `depuis le ${fmtDate(first?.date)}`, true],
+      [trend, "moyenne 4 dernières vs 4 précédentes", true],
+      [last ? goal - last.kg : null, `restants pour ${fmtKg(goal)} kg`, false],
+      [n, "pesées enregistrées", false, true]
+    ].map(([v, label, signed, raw]) => `<div class="stat"><b class="${signed ? cls(v) : ""}">${raw ? v : (signed ? fmtDelta(v) : fmtKg(v)) + " kg"}</b><small>${esc(label)}</small></div>`).join("");
+
+    if(mini) mini.destroy();
+    mini = window.weightChart($("#mini"), asc.slice(-12), { goal: null });
+
+    const prog = D.programs.find(p => p.current) || D.programs[0];
+    $("#sessions").innerHTML = prog.sessions.map(s => `<a class="panel" href="programme.html#${encodeURIComponent(s.key)}" style="text-decoration:none;color:inherit;display:block">
+        <div style="font-family:var(--brush);font-size:26px;color:var(--orange)">${esc(s.name)}</div>
+        <div class="muted" style="font-size:14px;margin-top:4px">${s.exercises.map(e => esc(e.name)).join(", ")}</div></a>`).join("");
+  }
+
+  $("#quote").textContent = QUOTES[Math.floor(Date.now()/864e5) % QUOTES.length];
+  const f = $("#quick"); f.date.value = todayISO();
+  f.onsubmit = e => {
+    e.preventDefault();
+    const kg = num(f.kg.value); if(kg == null || kg < 30 || kg > 200){ P.toast("Poids invalide"); f.kg.focus(); return; }
+    const ex = P.data.weights.find(w => w.date === f.date.value);
+    if(ex && !confirm(`Une pesée existe déjà le ${fmtDate(ex.date)} (${fmtKg(ex.kg)} kg). La remplacer ?`)) return;
+    if(ex){ ex.kg = kg; ex.note = f.note.value.trim(); }
+    else P.data.weights.push({ id: P.uid("w"), date: f.date.value, kg, note: f.note.value.trim() });
+    P.save(`Pesée enregistrée : ${fmtKg(kg)} kg`);
+    f.kg.value = ""; f.note.value = ""; render();
+  };
+
+  await P.load(); render(); P.leaves();
+})();
+</script>
+</body>
+</html>

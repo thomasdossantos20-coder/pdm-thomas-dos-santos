@@ -1,0 +1,1977 @@
+{
+ "version": 1,
+ "updatedAt": null,
+ "profile": {
+  "name": "Thomas",
+  "heightCm": 184,
+  "goalKg": 75,
+  "goalLabel": "75 kg à l'été 2027",
+  "longGoalKg": 80
+ },
+ "weights": [
+  {
+   "id": "w1",
+   "date": "2026-01-11",
+   "kg": 65.5,
+   "note": "Reprise de maladie, et mauvaise digestion whey"
+  },
+  {
+   "id": "w2",
+   "date": "2026-01-18",
+   "kg": 65.6,
+   "note": "3 premiers jours bon mais ensuite intoxiqué à cause du shaker donc j'ai fait les 4 derniers en perte donc pas choquant, objectif 66 semaine pro"
+  },
+  {
+   "id": "w3",
+   "date": "2026-01-25",
+   "kg": 67.2,
+   "note": "Je trouve ça fou même bizarre, à voir la semaine pro si ça se stabilise, objectif ne plus descendre en dessous de 66,5. Sinon bonne pdm mais faire plus les shakers et petit dej. Meilleure semaine depuis 2026"
+  },
+  {
+   "id": "w4",
+   "date": "2026-02-01",
+   "kg": 67.6,
+   "note": "Pas dégueu en moyenne 2800 calories par jour, essaye de quand même prendre plus le shaker parce que franchement trop de fast-food pour rattraper les calories manquantes mais sur la bonne voie, continue"
+  },
+  {
+   "id": "w5",
+   "date": "2026-02-08",
+   "kg": 68.3,
+   "note": "Encore fou de prendre autant je comprends pas mais ok. J'ai pas fait tant de shaker, j'ai mal mangé le week-end mais j'ai quand même fait plus ou moins mes calories. À voir semaine pro"
+  },
+  {
+   "id": "w6",
+   "date": "2026-02-15",
+   "kg": 68.7,
+   "note": "Plus ou moins pareil car en vrai j'avais plus que 68,3 la semaine dernière donc là c'est plutôt ok sachant que j'ai pas fait une top semaine. Bien reprendre les petits dej et shaker, 140 g protéines minimum, prendre des yaourts le soir. Ne plus descendre en dessous de 68"
+  },
+  {
+   "id": "w7",
+   "date": "2026-02-22",
+   "kg": 67.2,
+   "note": "Catastrophe, reprise en main obligatoire"
+  },
+  {
+   "id": "w8",
+   "date": "2026-03-01",
+   "kg": 68.8,
+   "note": "Parfait, j'ai tout repris en 1 semaine avec même un positif de 100 grammes."
+  },
+  {
+   "id": "w9",
+   "date": "2026-03-08",
+   "kg": 68.8,
+   "note": "Pas content car je visais 69. Je peux m'en vouloir parce que de jeudi à dimanche j'ai pas vraiment fait de prise de masse. Passer les 70 ça va être fin mars, pas assez constant"
+  },
+  {
+   "id": "w10",
+   "date": "2026-03-15",
+   "kg": 69.0,
+   "note": "Pas mal vu que semaine pas ouf. Essaye de garder la même semaine pro"
+  },
+  {
+   "id": "w11",
+   "date": "2026-03-22",
+   "kg": 67.7,
+   "note": "On connaît les raisons, ça va pas du tout, faut tout reprendre semaine pro"
+  },
+  {
+   "id": "w12",
+   "date": "2026-03-29",
+   "kg": 69.0,
+   "note": "Ok continuer"
+  },
+  {
+   "id": "w13",
+   "date": "2026-04-05",
+   "kg": 69.5,
+   "note": "Pas mal mais un peu déçu, chercher les 70 semaine pro"
+  },
+  {
+   "id": "w14",
+   "date": "2026-04-12",
+   "kg": 70.4,
+   "note": "Essaye de pas descendre en dessous de 70 semaine pro"
+  },
+  {
+   "id": "w15",
+   "date": "2026-04-19",
+   "kg": 69.0,
+   "note": "…"
+  },
+  {
+   "id": "w16",
+   "date": "2026-04-26",
+   "kg": 71.0,
+   "note": "Bizarre mais carré"
+  },
+  {
+   "id": "w17",
+   "date": "2026-05-03",
+   "kg": 71.4,
+   "note": "Carré on continue mais mange bien, trop de fast-food cette semaine"
+  },
+  {
+   "id": "w18",
+   "date": "2026-05-09",
+   "kg": 71.3,
+   "note": "Pas bon, trop moyen cette semaine"
+  },
+  {
+   "id": "w19",
+   "date": "2026-05-17",
+   "kg": 70.3,
+   "note": "Très bizarre de perdre autant, le padel ? Objectif retrouver début juin au moins 71,5"
+  },
+  {
+   "id": "w20",
+   "date": "2026-05-24",
+   "kg": 69.0,
+   "note": ""
+  },
+  {
+   "id": "w21",
+   "date": "2026-05-31",
+   "kg": 70.0,
+   "note": "Sans commentaire"
+  },
+  {
+   "id": "w22",
+   "date": "2026-06-07",
+   "kg": 70.8,
+   "note": "On reprend mais dur dur la pdm là"
+  },
+  {
+   "id": "w23",
+   "date": "2026-06-14",
+   "kg": 69.1,
+   "note": "Vsy"
+  },
+  {
+   "id": "w24",
+   "date": "2026-06-21",
+   "kg": 70.5,
+   "note": "Ok"
+  },
+  {
+   "id": "w25",
+   "date": "2026-06-28",
+   "kg": 69.6,
+   "note": "Archi ok après canicule"
+  },
+  {
+   "id": "w26",
+   "date": "2026-07-13",
+   "kg": 70.6,
+   "note": "Bien on continue"
+  },
+  {
+   "id": "w27",
+   "date": "2026-08-30",
+   "kg": 69.0,
+   "note": "Retour vacances (noté « 30 septembre » dans Notion, remis au 30 août)"
+  },
+  {
+   "id": "w28",
+   "date": "2026-09-06",
+   "kg": 71.0,
+   "note": "Très bonne reprise"
+  },
+  {
+   "id": "w29",
+   "date": "2026-09-15",
+   "kg": 71.4,
+   "note": "Ok"
+  },
+  {
+   "id": "w30",
+   "date": "2026-09-20",
+   "kg": 71.8,
+   "note": "Ok bizarre en vrai"
+  }
+ ],
+ "measurements": [
+  {
+   "id": "m1",
+   "date": null,
+   "name": "Tour de bras",
+   "value": 33.5,
+   "unit": "cm",
+   "note": "Contracté après 70 pompes"
+  }
+ ],
+ "programs": [
+  {
+   "id": "sept2026",
+   "title": "Programme Septembre 2026",
+   "subtitle": "Full Body ABCD · 4x/semaine",
+   "current": true,
+   "sessions": [
+    {
+     "key": "A",
+     "name": "Séance A",
+     "exercises": [
+      {
+       "id": "e1",
+       "name": "Développé couché haltères",
+       "sets": 3,
+       "reps": "8",
+       "loads": [
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 16,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 18,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 22,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 24,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 26,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 28,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire des 30 au moins 4 contrôlé"
+      },
+      {
+       "id": "e2",
+       "name": "Curl marteau haltères",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 8,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 16,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 18,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Refaire 18 bien contrôler"
+      },
+      {
+       "id": "e3",
+       "name": "Triceps poulie corde",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 17.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Contrôler le 17,5, dégressif à 12,5"
+      },
+      {
+       "id": "e4",
+       "name": "Mollets machine",
+       "sets": 4,
+       "reps": "12",
+       "loads": [
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Tenter 45"
+      },
+      {
+       "id": "e5",
+       "name": "Tirage vertical",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Tenter 70 bien"
+      },
+      {
+       "id": "e6",
+       "name": "Abdos machine (crunch)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 75"
+      }
+     ]
+    },
+    {
+     "key": "B",
+     "name": "Séance B",
+     "exercises": [
+      {
+       "id": "e7",
+       "name": "Développé incliné machine",
+       "sets": 3,
+       "reps": "8",
+       "loads": [
+        {
+         "v": 20,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 47.5,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": "Courbevoie",
+         "date": null
+        }
+       ],
+       "note": "Faire 55"
+      },
+      {
+       "id": "e8",
+       "name": "Curl pupitre machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 27.5,
+         "gym": "Paris",
+         "date": null
+        }
+       ],
+       "note": "Faire 7 belles reps puis dégressif haltère 12 ou 10. Faire 27,5 et viser 7-8 reps puis dégressif"
+      },
+      {
+       "id": "e9",
+       "name": "Dips machine assistée",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 80,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 90,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 100"
+      },
+      {
+       "id": "e10",
+       "name": "Leg extension",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 72.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 75,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 77.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 80,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 82.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 85,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 90,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 92,5"
+      },
+      {
+       "id": "e11",
+       "name": "Tirage horizontal",
+       "sets": 3,
+       "reps": "8",
+       "loads": [
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 60"
+      },
+      {
+       "id": "e12",
+       "name": "Élévations latérales haltères",
+       "sets": 3,
+       "reps": "12",
+       "loads": [
+        {
+         "v": 6,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 8,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Bien contrôler au max les 12"
+      }
+     ]
+    },
+    {
+     "key": "C",
+     "name": "Séance C",
+     "exercises": [
+      {
+       "id": "e13",
+       "name": "Butterfly",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 22.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 25"
+      },
+      {
+       "id": "e14",
+       "name": "Curl banc incliné 45°",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 14 bien, 6 reps"
+      },
+      {
+       "id": "e15",
+       "name": "Extension triceps poulie basse",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 15 propre, encore bien contrôler le mouvement"
+      },
+      {
+       "id": "e16",
+       "name": "Adducteurs machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire bien 40"
+      },
+      {
+       "id": "e17",
+       "name": "Upper back",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 25,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 52.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 55 bien contrôlé quitte à descendre"
+      },
+      {
+       "id": "e18",
+       "name": "Abdos obliques haltère",
+       "sets": 3,
+       "reps": "12",
+       "loads": [
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 16,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 18,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Prendre 20 mais s'échauffer à 10 avant"
+      }
+     ]
+    },
+    {
+     "key": "D",
+     "name": "Séance D",
+     "exercises": [
+      {
+       "id": "e19",
+       "name": "Presse",
+       "sets": 3,
+       "reps": "6",
+       "loads": [
+        {
+         "v": 100,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 110,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 120,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 130,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 140,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 150,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 160,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 170,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 180 même si c'est 5 reps"
+      },
+      {
+       "id": "e20",
+       "name": "Leg curl (ischios)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 27.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 37.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "45 en dégressif, bien échauffé avant sinon crampe"
+      },
+      {
+       "id": "e21",
+       "name": "Lombaires (banc + disque)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Continuer à 20"
+      },
+      {
+       "id": "e22",
+       "name": "Shoulder press machine",
+       "sets": 3,
+       "reps": "12",
+       "loads": [
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": "Paris",
+         "date": null
+        }
+       ],
+       "note": "Historique pré-blessure. Charge actuelle imposée par le kiné : 5 kg, ne pas remonter sans feu vert",
+       "alert": "Kiné : 5 kg max sans feu vert"
+      },
+      {
+       "id": "e23",
+       "name": "Circuit gainage / crunch / leg raise",
+       "sets": "3 tours",
+       "reps": "max",
+       "loads": [],
+       "note": "Format circuit, pas de comparaison directe avec le plank pur",
+       "details": "1x/semaine (D uniquement). (1) Gainage classique 45s, (2) Crunchs lents 15-20 reps, (3) Relevés de jambes 12-15 reps, (4) Gainage côté 30s/côté, (5) Toucher de talons 20 reps. Progression : augmenter la durée totale toutes les 1-2 semaines (+2-3 min par palier, en allongeant d'abord les gainages)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sept2025",
+   "title": "Programme Septembre 2025",
+   "subtitle": "Push / Pull / Legs · 3x/semaine",
+   "current": false,
+   "sessions": [
+    {
+     "key": "PUSH",
+     "name": "Push",
+     "exercises": [
+      {
+       "id": "e24",
+       "name": "Développé couché haltères",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 16,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 18,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 22,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 24,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 26,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 28,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire des 30 au moins 4 contrôlé"
+      },
+      {
+       "id": "e25",
+       "name": "Développé incliné machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 27,5 ou 30 si pas de demi-poids"
+      },
+      {
+       "id": "e26",
+       "name": "Chest press incline (Courbevoie)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 47.5,
+         "gym": "Courbevoie",
+         "date": null
+        }
+       ],
+       "note": "Faire 50 propres, surtout après le DC c'est compliqué"
+      },
+      {
+       "id": "e27",
+       "name": "Pec deck machine (coudes)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 40,
+         "gym": null,
+         "date": null,
+         "label": "ancienne machine"
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null,
+         "label": "nouvelle machine"
+        }
+       ],
+       "note": "Voir si je peux augmenter après la première série"
+      },
+      {
+       "id": "e28",
+       "name": "Pectoral machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire bien les 60 propres avec beaucoup de contrôle, dégressif en cas d'échec"
+      },
+      {
+       "id": "e29",
+       "name": "Pectoraux machine assistée",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Monter de 2,5"
+      },
+      {
+       "id": "e30",
+       "name": "Shoulder press",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": "Paris",
+         "date": null
+        }
+       ],
+       "note": "Faire 40 mais propre avec dégressif après échec"
+      },
+      {
+       "id": "e31",
+       "name": "Élévations latérales haltères",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 6,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 8,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Bien contrôler les 12 même si j'en fais 5 puis reprendre à 8. Très dur d'augmenter, petit à petit. Objectif 12 avant août"
+      },
+      {
+       "id": "e32",
+       "name": "Extension triceps poulie",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 17.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Contrôler le 20, dégressif 15"
+      },
+      {
+       "id": "e33",
+       "name": "Triceps machine",
+       "sets": 3,
+       "reps": "12",
+       "loads": [
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 47.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Passer à 55 et faire du dégressif en cas d'échec"
+      }
+     ]
+    },
+    {
+     "key": "PULL",
+     "name": "Pull",
+     "exercises": [
+      {
+       "id": "e34",
+       "name": "Tirage vertical machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Garder 60 pour le moment et vraiment contrôler au max le mouvement"
+      },
+      {
+       "id": "e35",
+       "name": "Low row",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 50,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 75,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 80,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 85,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 90,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 62.5,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 75,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 77.5,
+         "gym": "Paris",
+         "date": null
+        }
+       ],
+       "note": "Paris : faire 77,5 propre. Courbevoie : bien faire les 90, descendre si besoin"
+      },
+      {
+       "id": "e36",
+       "name": "Upper back",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 25,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire minimum 6x3 à 52,5, bien contrôlé, augmenter petit à petit"
+      },
+      {
+       "id": "e37",
+       "name": "Lombaires",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Continuer à 20 tout le mois de juin"
+      },
+      {
+       "id": "e38",
+       "name": "Machine reverse pec deck",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 12.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Pas de remarque"
+      },
+      {
+       "id": "e39",
+       "name": "Curl haltères debout",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire du dégressif si j'arrive pas"
+      },
+      {
+       "id": "e40",
+       "name": "Curl pupitre machine",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Courbevoie",
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 20,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 25,
+         "gym": "Paris",
+         "date": null
+        },
+        {
+         "v": 27.5,
+         "gym": "Paris",
+         "date": null
+        }
+       ],
+       "note": "Viser 6 reps minimum à 25. Faire 27,5 et viser 7-8 reps puis dégressif"
+      },
+      {
+       "id": "e41",
+       "name": "Curl pupitre",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 15,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Quand j'aurai 8 reps je monte à 17,5"
+      },
+      {
+       "id": "e42",
+       "name": "Curl marteau haltères",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 8,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 10,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 12,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 14,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 16,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Bien monter sur les 16 quitte à faire moins, contrôler le mouvement"
+      }
+     ]
+    },
+    {
+     "key": "LEGS",
+     "name": "Legs",
+     "exercises": [
+      {
+       "id": "e43",
+       "name": "Presse",
+       "sets": 3,
+       "reps": "6",
+       "loads": [
+        {
+         "v": 100,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 110,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 120,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 130,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 140,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 150,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 160,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 170,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 180 même si c'est 5"
+      },
+      {
+       "id": "e44",
+       "name": "Leg extension (quadriceps)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 72.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 75,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 77.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 80,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 82.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 85,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 85 x8 min bien contrôlé puis dégressif à 65"
+      },
+      {
+       "id": "e45",
+       "name": "Prone leg curl (ischios)",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 27.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 37.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "45 en dégressif mais bien échauffé avant sinon crampe"
+      },
+      {
+       "id": "e46",
+       "name": "Machine adducteur",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 70"
+      },
+      {
+       "id": "e47",
+       "name": "Mollets machine",
+       "sets": 4,
+       "reps": "15",
+       "loads": [
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Tenter 45"
+      },
+      {
+       "id": "e48",
+       "name": "Gainage sur tapis",
+       "sets": 3,
+       "reps": "max",
+       "loads": [],
+       "note": "",
+       "details": "1er : 1:30 · 2e : 1:00 · 3e : 1:15"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "abs": {
+  "title": "Circuit abdos",
+  "freq": "3x / semaine (ex : lundi, mercredi, samedi)",
+  "duration": "12-15 min · 3 tours · 1 min de repos entre les tours",
+  "moves": [
+   {
+    "name": "Gainage classique",
+    "dose": "45 s",
+    "cues": [
+     "Avant-bras au sol",
+     "Corps bien droit",
+     "Contracter abdos et fessiers"
+    ]
+   },
+   {
+    "name": "Crunchs lents",
+    "dose": "15-20 reps",
+    "cues": [
+     "Jambes pliées",
+     "Monter lentement les épaules",
+     "Ne pas tirer sur la nuque"
+    ]
+   },
+   {
+    "name": "Relevés de jambes",
+    "dose": "12-15 reps",
+    "cues": [
+     "Jambes tendues",
+     "Monter lentement",
+     "Bas du dos au sol"
+    ]
+   },
+   {
+    "name": "Gainage côté",
+    "dose": "30 s / côté",
+    "cues": [
+     "Corps aligné",
+     "Appui sur un avant-bras"
+    ]
+   },
+   {
+    "name": "Toucher de talons",
+    "dose": "20 reps",
+    "cues": [
+     "Jambes pliées",
+     "Toucher alternativement chaque talon"
+    ]
+   }
+  ],
+  "goals": [
+   "Ventre plus gainé",
+   "Abdos plus visibles",
+   "Meilleure posture",
+   "Renforcer toute la sangle abdominale"
+  ]
+ },
+ "recipes": [
+  {
+   "name": "Shaker prise de masse",
+   "yield": "1 shaker",
+   "kcal": "≈ 460 kcal",
+   "protein": "≈ 34 g",
+   "ingredients": [
+    "200 ml lait",
+    "200 ml eau",
+    "30 g whey",
+    "20 g miel",
+    "15 g beurre de cacahuète",
+    "10 g huile (colza)"
+   ],
+   "detail": [
+    "Lait 200 ml → 100 kcal",
+    "Whey 30 g → 120 kcal",
+    "Miel 20 g → 60 kcal",
+    "Beurre de cacahuète 15 g → 90 kcal",
+    "Huile 10 g → 90 kcal"
+   ]
+  },
+  {
+   "name": "Pancakes protéinés (version allégée)",
+   "yield": "2 goûters · 5-6 pancakes",
+   "kcal": "≈ 720-760 kcal",
+   "protein": "≈ 38-40 g",
+   "ingredients": [
+    "2 bananes",
+    "70 g flocons d'avoine",
+    "2 œufs",
+    "20 g beurre de cacahuète",
+    "20 g miel",
+    "30 g whey",
+    "80-100 g d'eau ou lait pour mixer"
+   ],
+   "detail": []
+  }
+ ],
+ "nutrition": {
+  "kcal": "3000-3200 kcal / jour",
+  "protein": "130-140 g protéines minimum"
+ }
+}

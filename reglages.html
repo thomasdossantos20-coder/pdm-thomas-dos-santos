@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Réglages · PDM</title>
+<meta name="theme-color" content="#151C2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <h1>Réglages</h1>
+  <p class="lede">Sauvegarde, objectifs et changement de programme.</p>
+
+  <section class="panel" aria-labelledby="h-sync">
+    <h2 id="h-sync">Sauvegarde PC + téléphone</h2>
+    <p class="muted" style="margin-top:-6px">Tes données sont enregistrées dans ton repo GitHub, sur la branche <code>data</code>. Il faut une clé GitHub sur chaque appareil, à coller une seule fois. Sans clé, le site marche quand même mais ne garde les modifs que sur cet appareil.</p>
+    <details style="margin:12px 0">
+      <summary style="cursor:pointer;font-weight:700">Créer ta clé (2 minutes, une seule fois)</summary>
+      <ol class="muted" style="padding-left:20px">
+        <li>Ouvre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+        <li>Nom : <i>PDM site</i>. Expiration : 1 an.</li>
+        <li>Repository access : <b>Only select repositories</b> → <b>pdm-thomas-dos-santos</b> uniquement.</li>
+        <li>Permissions → Repository permissions → <b>Contents : Read and write</b>. Rien d'autre.</li>
+        <li>Generate token, copie la clé (commence par <code>github_pat_</code>) et colle-la ci-dessous. Fais pareil sur ton téléphone avec la même clé.</li>
+      </ol>
+    </details>
+    <form id="cfg" class="grid" style="gap:10px">
+      <label class="f">Clé GitHub<input type="password" name="token" autocomplete="off" placeholder="github_pat_…"></label>
+      <div class="form-row">
+        <label class="f">Compte<input name="owner"></label>
+        <label class="f">Repo<input name="repo"></label>
+        <label class="f">Branche des données<input name="branch"></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" type="submit">Enregistrer et tester</button>
+        <button class="btn ghost" type="button" id="pull">Récupérer la dernière version</button>
+        <button class="btn ghost" type="button" id="forget">Oublier la clé sur cet appareil</button>
+      </div>
+      <p id="cfg-msg" class="muted" role="status" style="margin:0"></p>
+    </form>
+  </section>
+
+  <section class="panel section" aria-labelledby="h-goal">
+    <h2 id="h-goal">Objectif</h2>
+    <form id="goal" class="form-row">
+      <label class="f" style="max-width:160px">Poids visé (kg)<input name="goalKg" inputmode="decimal"></label>
+      <label class="f" style="flex:2">Libellé<input name="goalLabel" placeholder="75 kg à l'été 2027"></label>
+      <label class="f" style="max-width:160px">Cible long terme (kg)<input name="longGoalKg" inputmode="decimal"></label>
+      <button class="btn" type="submit">Enregistrer</button>
+    </form>
+  </section>
+
+  <section class="panel section" aria-labelledby="h-prog">
+    <h2 id="h-prog">Programmes</h2>
+    <p class="muted" style="margin-top:-6px">Le programme actuel s'affiche dans l'onglet Programme, les autres dans Archives.</p>
+    <div id="progs"></div>
+    <button class="btn ghost" id="new-prog" style="margin-top:12px">Démarrer un nouveau programme</button>
+  </section>
+
+  <section class="panel section" aria-labelledby="h-bk">
+    <h2 id="h-bk">Copie de secours</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn ghost" id="export">Télécharger mes données (JSON)</button>
+      <label class="btn ghost" style="display:inline-block">Restaurer depuis un fichier<input type="file" id="import" accept="application/json" hidden></label>
+    </div>
+  </section>
+</main>
+<script src="assets/app.js"></script>
+<script>
+(async function(){
+  const P = window.PDM, { $, esc, num } = P;
+  const f = $("#cfg"), msg = $("#cfg-msg");
+  const fill = () => { const c = P.getCfg(); f.token.value = c.token; f.owner.value = c.owner; f.repo.value = c.repo; f.branch.value = c.branch; };
+  fill();
+  await P.load();
+
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const c = { ...P.getCfg(), token: f.token.value.trim(), owner: f.owner.value.trim(), repo: f.repo.value.trim(), branch: f.branch.value.trim() || "data" };
+    P.setCfg(c); P.resetRemoteSha();
+    if(!c.token){ msg.textContent = "Pas de clé : les modifs restent sur cet appareil."; P.setSync("local"); return; }
+    msg.textContent = "Test en cours…";
+    try{
+      const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, { headers: { Authorization: `Bearer ${c.token}`, Accept: "application/vnd.github+json" }, cache: "no-store" });
+      if(r.status === 401){ msg.textContent = "Clé refusée par GitHub. Vérifie que tu l'as copiée en entier."; P.setSync("err","Clé GitHub refusée"); return; }
+      if(r.status === 404){ msg.textContent = "Repo introuvable avec cette clé. Vérifie que la clé a bien accès à pdm-thomas-dos-santos."; P.setSync("err","Repo introuvable"); return; }
+      const j = await r.json();
+      if(!j.permissions || !j.permissions.push){ msg.textContent = "La clé lit le repo mais ne peut pas écrire. Mets Contents sur Read and write."; P.setSync("err","Clé en lecture seule"); return; }
+      const ok = await P.pushRemote(P.data);
+      msg.textContent = ok ? "Connecté. Tes modifs se sauvegardent maintenant sur GitHub." : "Connexion OK mais l'écriture a échoué. Vérifie que la branche « " + c.branch + " » existe.";
+    }catch(err){ msg.textContent = "GitHub injoignable. Vérifie ta connexion."; }
+  };
+  $("#forget").onclick = () => { if(confirm("Retirer la clé GitHub de cet appareil ?")){ P.setCfg({ ...P.getCfg(), token: "" }); fill(); P.setSync("local"); msg.textContent = "Clé retirée de cet appareil."; } };
+  $("#pull").onclick = async () => {
+    try{ const r = await P.fetchRemote(); if(!r){ msg.textContent = "Rien trouvé sur GitHub."; return; }
+      if(!confirm("Remplacer les données de cet appareil par la version GitHub ?")) return;
+      P.data = r; localStorage.setItem("pdm-data", JSON.stringify(r)); localStorage.setItem("pdm-dirty","0"); msg.textContent = "Données récupérées."; renderProgs(); fillGoal();
+    }catch(e){ msg.textContent = "Impossible de lire GitHub."; }
+  };
+
+  const g = $("#goal");
+  const fillGoal = () => { const p = P.data.profile; g.goalKg.value = String(p.goalKg).replace(".",","); g.goalLabel.value = p.goalLabel || ""; g.longGoalKg.value = p.longGoalKg ? String(p.longGoalKg).replace(".",",") : ""; };
+  fillGoal();
+  g.onsubmit = e => { e.preventDefault(); const k = num(g.goalKg.value); if(k == null){ P.toast("Poids visé invalide"); return; }
+    Object.assign(P.data.profile, { goalKg: k, goalLabel: g.goalLabel.value.trim(), longGoalKg: num(g.longGoalKg.value) }); P.save("Objectif enregistré"); };
+
+  function renderProgs(){
+    $("#progs").innerHTML = P.data.programs.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div><b>${esc(p.title)}</b><div class="muted" style="font-size:14px">${esc(p.subtitle||"")}</div></div>
+      ${p.current ? `<span class="rank" style="margin:0">Actuel</span>` : `<button class="btn ghost sm" data-cur="${esc(p.id)}">Rendre actuel</button>`}</div>`).join("");
+  }
+  renderProgs();
+  $("#progs").onclick = e => { const b = e.target.closest("[data-cur]"); if(!b) return; P.data.programs.forEach(p => p.current = p.id === b.dataset.cur); P.save("Programme actuel changé"); renderProgs(); };
+  $("#new-prog").onclick = () => {
+    const title = prompt("Nom du nouveau programme", "Programme " + new Date().toLocaleDateString("fr-FR",{month:"long",year:"numeric"})); if(!title) return;
+    const base = P.data.programs.find(p => p.current);
+    const copy = JSON.parse(JSON.stringify(base));
+    copy.id = P.uid("p"); copy.title = title; copy.current = true;
+    copy.sessions.forEach(s => s.exercises.forEach(x => x.id = P.uid("e")));
+    P.data.programs.forEach(p => p.current = false); P.data.programs.unshift(copy);
+    P.save("Nouveau programme créé, l'ancien est dans Archives"); renderProgs();
+  };
+
+  $("#export").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(P.data,null,1)],{type:"application/json"})); a.download = `pdm-sauvegarde-${P.todayISO()}.json`; a.click(); };
+  $("#import").onchange = async e => {
+    const file = e.target.files[0]; if(!file) return;
+    try{ const d = JSON.parse(await file.text()); if(!d.weights || !d.programs) throw 0;
+      if(!confirm("Remplacer toutes tes données par ce fichier ?")) return;
+      P.data = d; P.save("Données restaurées"); renderProgs(); fillGoal();
+    }catch(err){ P.toast("Fichier non reconnu"); }
+  };
+})();
+</script>
+</body>
+</html>

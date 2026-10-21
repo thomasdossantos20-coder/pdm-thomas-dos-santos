@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Programme · PDM</title>
+<meta name="theme-color" content="#151C2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <h1 id="title">Programme</h1>
+  <p class="lede" id="sub"></p>
+  <div id="prog"></div>
+</main>
+<script src="assets/app.js"></script>
+<script>
+(async function(){
+  const P = window.PDM;
+  await P.load();
+  const prog = P.data.programs.find(p => p.current) || P.data.programs[0];
+  P.$("#title").textContent = prog.title;
+  P.$("#sub").textContent = prog.subtitle + ". Note ta charge après chaque séance : la dernière apparaît en orange, la courbe montre ta progression.";
+  const state = { session: decodeURIComponent(location.hash.slice(1)) || null, gym: "all", hash: true };
+  P.renderProgram(P.$("#prog"), prog, state);
+  window.addEventListener("hashchange", () => { state.session = decodeURIComponent(location.hash.slice(1)); P.renderProgram(P.$("#prog"), prog, state); });
+})();
+</script>
+</body>
+</html>
