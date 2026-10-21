@@ -316,3 +316,6 @@ h2::before{
   .sync[data-s="busy"] i{animation:none}
   .gauge-kunai{transition:none}
 }
+
+.key-banner{background:#5A1F1F;color:#FFD6D6;border-bottom:1px solid var(--loss);padding:10px 16px;text-align:center;font-weight:700;font-size:14px}
+.key-banner a{color:#fff}

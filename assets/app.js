@@ -124,7 +124,7 @@ async function load(){
   } else {
     DATA = local;
   }
-  if(!getCfg().token) setSync("local");
+  if(!getCfg().token){ setSync("local"); keyBanner(); }
   return DATA;
 }
 function persistLocal(dirty){
@@ -166,6 +166,17 @@ window.addEventListener("beforeunload", flushNow);
 window.addEventListener("focus", pullIfNewer);
 window.addEventListener("online", pullIfNewer);
 setInterval(pullIfNewer, 20000);
+
+function keyBanner(){
+  if(location.pathname.endsWith("reglages.html") || document.querySelector(".key-banner")) return;
+  let priv = false; try { localStorage.setItem("pdm-t","1"); localStorage.removeItem("pdm-t"); } catch(e){ priv = true; }
+  const standalone = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  const b = document.createElement("div"); b.className = "key-banner"; b.setAttribute("role","alert");
+  b.innerHTML = priv
+    ? `Navigation privée : rien n'est sauvegardé ici. Ouvre le site dans un onglet normal.`
+    : `Pas de clé GitHub ${standalone ? "dans l'app de l'écran d'accueil (elle ne partage pas la mémoire de Safari)" : "sur cet appareil"} : tes modifs ne vont pas sur l'autre appareil. <a href="reglages.html">Coller la clé</a>`;
+  document.querySelector(".topbar").after(b);
+}
 
 /* ---------- calculs poids ---------- */
 function weightsAsc(){ return [...DATA.weights].sort((a,b) => a.date.localeCompare(b.date)); }
