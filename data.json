@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T08:21:39.007Z",
+ "updatedAt": "2026-10-22T08:22:01.617Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1997,6 +1997,10 @@
   },
   "reflexe": {
    "scores": [
+    {
+     "s": 414,
+     "date": "2026-10-22"
+    },
     {
      "s": 1176,
      "date": "2026-10-22"
