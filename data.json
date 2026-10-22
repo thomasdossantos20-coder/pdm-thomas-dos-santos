@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T08:22:01.617Z",
+ "updatedAt": "2026-10-22T08:36:20.575Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2029,6 +2029,10 @@
   },
   "memoire": {
    "scores": [
+    {
+     "s": 8,
+     "date": "2026-10-22"
+    },
     {
      "s": 6,
      "date": "2026-10-22"
