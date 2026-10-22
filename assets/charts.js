@@ -4,12 +4,13 @@ window.weightChart = function(canvas, entries, opts={}){
   const pts = entries.map(w => ({ x: new Date(w.date + "T12:00:00").getTime(), y: w.kg, d: w.date, n: w.note }));
   const avg = rollingAvg(entries, 4);
   const datasets = [{
-    label: "Poids", data: pts, borderColor: "#F7811E", backgroundColor: "rgba(247,129,30,.14)",
-    pointBackgroundColor: "#F7811E", pointBorderColor: "#151C2A", pointBorderWidth: 2,
-    pointRadius: entries.length > 40 ? 2 : 4, pointHoverRadius: 7, borderWidth: 2.5, tension: .25, fill: true
+    label: "Poids", data: pts, borderColor: "#FF8A1F", backgroundColor: c => { const {ctx, chartArea} = c.chart; if(!chartArea) return "rgba(255,138,31,.12)";
+      const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom); g.addColorStop(0,"rgba(255,138,31,.35)"); g.addColorStop(1,"rgba(255,138,31,0)"); return g; },
+    pointBackgroundColor: "#FFB24D", pointBorderColor: "#0C1126", pointBorderWidth: 2,
+    pointRadius: entries.length > 40 ? 2 : 4, pointHoverRadius: 7, borderWidth: 3, tension: .32, fill: true
   }];
   if(opts.avg !== false) datasets.push({
-    label: "Moyenne 4 pesées", data: pts.map((p,i) => ({ x: p.x, y: avg[i] })), borderColor: "#3DA157",
+    label: "Moyenne 4 pesées", data: pts.map((p,i) => ({ x: p.x, y: avg[i] })), borderColor: "#4DBA74",
     borderDash: [6,5], borderWidth: 2, pointRadius: 0, tension: .3, fill: false
   });
   if(opts.goal) datasets.push({
@@ -22,18 +23,18 @@ window.weightChart = function(canvas, entries, opts={}){
     type: "line",
     data: { datasets },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
+      responsive: true, maintainAspectRatio: false, animation: { duration: window.FX && FX.RM ? 0 : 1100, easing: "easeOutQuart" },
       interaction: { mode: "nearest", intersect: false, axis: "x" },
       scales: {
-        x: { type: "linear", grid: { color: "rgba(52,66,92,.5)" }, ticks: { color: "#9CA8BC", maxTicksLimit: 7,
+        x: { type: "linear", grid: { color: "rgba(255,236,200,.07)" }, ticks: { color: "#A3ABC6", maxTicksLimit: 7,
              callback: v => { const d = new Date(v); return d.getDate() + " " + MONTHS[d.getMonth()]; } } },
-        y: { grid: { color: "rgba(52,66,92,.5)" }, ticks: { color: "#9CA8BC", callback: v => fmtKg(v) },
+        y: { grid: { color: "rgba(255,236,200,.07)" }, ticks: { color: "#A3ABC6", callback: v => fmtKg(v) },
              suggestedMin: Math.floor(Math.min(...ys) - .5), suggestedMax: Math.ceil(Math.max(...ys) + .5) }
       },
       plugins: {
-        legend: { labels: { color: "#EEF1F6", boxWidth: 14, usePointStyle: true } },
+        legend: { labels: { color: "#F1EEE6", font: { family: "Zen Kaku Gothic New", weight: "700" }, boxWidth: 14, usePointStyle: true } },
         tooltip: {
-          backgroundColor: "#F1E3C6", titleColor: "#3A2A14", bodyColor: "#3A2A14", padding: 10, displayColors: false,
+          backgroundColor: "#F3E6C9", titleColor: "#231C14", bodyColor: "#231C14", padding: 12, cornerRadius: 12, titleFont: { family: "Dela Gothic One", weight: "400" }, bodyFont: { family: "Zen Kaku Gothic New", weight: "700" }, displayColors: false,
           filter: i => i.datasetIndex === 0,
           callbacks: {
             title: items => fmtDate(items[0].raw.d),

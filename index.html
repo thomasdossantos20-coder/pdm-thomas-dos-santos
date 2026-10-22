@@ -4,70 +4,70 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PDM Thomas</title>
-<meta name="theme-color" content="#151C2A">
+<meta name="theme-color" content="#0C1126">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="PDM">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="manifest" href="manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=5">
+<link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 <main>
   <div class="grid grid-hero">
-    <section class="panel hero" aria-labelledby="h-now">
-      <span class="kunai-stuck" aria-hidden="true"></span>
-      <img class="ninja" src="assets/ninja.svg" alt="" aria-hidden="true">
-      <h1 id="h-now" style="font-size:20px;font-family:var(--body);font-weight:700;color:var(--muted)">Poids actuel</h1>
-      <div class="kg" id="kg-now">—</div>
-      <div class="when" id="kg-when"></div>
-      <div id="rank"></div>
-      <div class="gauge">
-        <div class="gauge-bar" role="progressbar" aria-label="Progression vers l'objectif" aria-valuemin="0" aria-valuemax="100" id="gauge"><div class="gauge-fill" style="width:0"></div></div>
-        <span class="gauge-kunai" aria-hidden="true" style="left:0"></span>
-        <div class="gauge-legend"><span id="g-start"></span><span id="g-goal"></span></div>
+    <section class="scroll-wrap scroll-anim" aria-labelledby="h-now">
+      <div class="rod top" aria-hidden="true"></div>
+      <div class="paper">
+        <div class="paper-head"><span id="h-now">Poids actuel</span><span id="kg-when"></span></div>
+        <div class="seal stamp" id="seal" aria-hidden="true"></div>
+        <div class="big"><span class="n" id="kg-now">—</span><span class="u">kg</span></div>
+        <div class="delta-line" id="kg-delta"></div>
+        <div class="rank-line"><span class="rank-pill" id="rank"></span><span id="rank-txt"></span></div>
+        <div class="rope" role="progressbar" aria-label="Progression vers l'objectif" aria-valuemin="0" aria-valuemax="100" id="gauge">
+          <div class="rope-track"></div><div class="rope-fill"></div><span class="rope-kunai"></span>
+        </div>
+        <div class="rope-ends"><span id="g-start"></span><span id="g-goal"></span></div>
+        <div class="streak" id="streak"></div>
       </div>
+      <div class="rod bottom" aria-hidden="true"></div>
     </section>
 
-    <section class="panel" aria-labelledby="h-add">
+    <section class="panel reveal" aria-labelledby="h-add" style="animation-delay:.25s">
       <h2 id="h-add">Nouvelle pesée</h2>
-      <div id="stale"></div>
-      <form id="quick" class="grid" style="gap:10px">
+      <form id="quick" class="grid" style="gap:12px">
         <div class="form-row">
           <label class="f">Date<input type="date" name="date" required></label>
           <label class="f">Poids (kg)<input name="kg" inputmode="decimal" placeholder="72,1" required></label>
         </div>
         <label class="f">Note de la semaine<textarea name="note" rows="2" placeholder="Shakers, petit-déj, séances, digestion…"></textarea></label>
-        <div><button class="btn" type="submit">Enregistrer la pesée</button></div>
+        <div><button class="btn big" type="submit">Enregistrer la pesée</button></div>
       </form>
-      <div class="quote" id="quote" style="margin-top:18px"></div>
+      <div class="quote" id="quote"></div>
     </section>
   </div>
 
-  <div class="divider-kunai" aria-hidden="true"><span></span></div>
   <section class="section" aria-labelledby="h-stats">
     <h2 id="h-stats">Où tu en es</h2>
     <div class="grid grid-2">
       <div class="stats" id="stats"></div>
-      <div class="panel"><div class="chart-wrap" style="height:220px"><canvas id="mini"></canvas></div>
+      <div class="panel"><div class="chart-wrap" style="height:230px"><canvas id="mini"></canvas></div>
         <p class="muted" style="margin:10px 0 0;font-size:14px">Les 12 dernières pesées. <a href="poids.html">Tout l'historique</a></p></div>
     </div>
   </section>
 
-  <div class="divider-kunai" aria-hidden="true"><span></span></div>
   <section class="section" aria-labelledby="h-sess">
     <h2 id="h-sess">Séances</h2>
-    <div class="grid grid-3" id="sessions" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div>
+    <div class="sess-grid" id="sessions"></div>
   </section>
 </main>
 
 <script src="assets/chart.umd.min.js"></script>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/charts.js"></script>
+<script src="assets/app.js?v=6"></script>
+<script src="assets/fx.js?v=6"></script>
+<script src="assets/charts.js?v=6"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, esc, fmtKg, fmtDelta, fmtDate, todayISO, num, daysBetween } = P;
@@ -80,45 +80,66 @@
     "Mille répétitions propres valent mieux qu'une seule bâclée.",
     "Tu n'as pas besoin de motivation. Tu as besoin d'une routine que tu respectes quand elle manque."
   ];
-  let mini;
+  const FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3-1-4 1-7 1-9Z" fill="#FF8A1F"/><path d="M12 12c1 2 3 3 3 5a3 3 0 0 1-6 0c0-1.5 1-2.5 1.5-3 .2 1 .8 1.5 1.5 1.5-.5-1.5 0-2.5 0-3.5Z" fill="#FFD27A"/></svg>';
+  let mini, first = true;
+
+  function streakCount(asc){
+    if(!asc.length || daysBetween(asc[asc.length-1].date, todayISO()) > 9) return 0;
+    let n = 1;
+    for(let i = asc.length-1; i > 0; i--){ if(daysBetween(asc[i-1].date, asc[i].date) <= 9) n++; else break; }
+    return n;
+  }
+
   function render(){
-    const D = P.data, asc = P.weightsAsc(), last = asc[asc.length-1], first = asc[0], prev = asc[asc.length-2];
+    const D = P.data, asc = P.weightsAsc(), last = asc[asc.length-1], firstW = asc[0], prev = asc[asc.length-2];
     const goal = D.profile.goalKg;
-    $("#kg-now").innerHTML = last ? `${fmtKg(last.kg)}<span>kg</span>` : "—";
-    $("#kg-when").textContent = last ? `Pesée du ${fmtDate(last.date)}` + (prev ? ` · ${fmtDelta(last.kg - prev.kg)} kg sur la semaine` : "") : "Aucune pesée pour l'instant.";
-    const pct = last && first ? Math.max(0, Math.min(100, (last.kg - first.kg) / (goal - first.kg) * 100)) : 0;
-    const rank = pct >= 100 ? "Objectif atteint, fixe le suivant" : pct >= 67 ? "Rang Jônin" : pct >= 34 ? "Rang Chûnin" : "Rang Genin";
-    $("#rank").innerHTML = `<span class="rank">${rank} · ${Math.round(pct)} %</span>`;
+    const el = $("#kg-now");
+    if(last){ first && window.FX ? FX.countUp(el, last.kg, fmtKg) : (el.textContent = fmtKg(last.kg)); } else el.textContent = "—";
+    $("#kg-when").textContent = last ? fmtDate(last.date) : "Aucune pesée";
+    const d = last && prev ? last.kg - prev.kg : null;
+    $("#kg-delta").innerHTML = d == null ? "" : `<span class="${d>0?"up":d<0?"down":""}">${fmtDelta(d)} kg</span> depuis la pesée précédente`;
+
+    const pct = last && firstW ? Math.max(0, Math.min(100, (last.kg - firstW.kg) / (goal - firstW.kg) * 100)) : 0;
+    const R = pct >= 100 ? ["上忍","Objectif atteint"] : pct >= 67 ? ["上忍","Rang Jônin"] : pct >= 34 ? ["中忍","Rang Chûnin"] : ["下忍","Rang Genin"];
+    $("#seal").textContent = R[0];
+    $("#rank").textContent = R[1];
+    $("#rank-txt").textContent = `${Math.round(pct)} % du chemin vers ${fmtKg(goal)} kg`;
     const g = $("#gauge"); g.setAttribute("aria-valuenow", Math.round(pct));
-    requestAnimationFrame(() => { g.firstElementChild.style.width = pct + "%"; document.querySelector(".gauge-kunai").style.left = Math.max(pct, 18) + "%"; });
-    $("#g-start").textContent = first ? `Départ ${fmtKg(first.kg)} kg` : "";
-    $("#g-goal").textContent = `${D.profile.goalLabel || "Objectif " + fmtKg(goal) + " kg"}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      g.querySelector(".rope-fill").style.width = pct + "%";
+      g.querySelector(".rope-kunai").style.left = Math.max(pct, 14) + "%";
+    }));
+    $("#g-start").textContent = firstW ? `Départ ${fmtKg(firstW.kg)} kg` : "";
+    $("#g-goal").textContent = D.profile.goalLabel || `Objectif ${fmtKg(goal)} kg`;
 
-    const gap = last ? daysBetween(last.date, todayISO()) : null;
-    $("#stale").innerHTML = gap != null && gap > 9
-      ? `<div class="alert" style="margin-bottom:12px">Dernière pesée il y a ${gap} jours. Sans pesée, la courbe ne te dit plus rien : pèse-toi dimanche matin, à jeun.</div>` : "";
+    const st = streakCount(asc), gap = last ? daysBetween(last.date, todayISO()) : null;
+    const sEl = $("#streak");
+    sEl.className = "streak" + (st ? "" : " off");
+    sEl.innerHTML = st
+      ? `${FLAME}<span>Série de ${st} pesée${st>1?"s":""} sans semaine sautée${gap > 6 ? ". Prochaine pesée attendue, ne casse pas la série" : ""}.</span>`
+      : `${FLAME}<span>${gap != null ? `Dernière pesée il y a ${gap} jours. ` : ""}Série cassée : pèse-toi dimanche matin, à jeun, pour la relancer.</span>`;
 
-    // stats
-    const n = asc.length;
-    const avg = a => a.reduce((s,w)=>s+w.kg,0)/a.length;
+    const n = asc.length, avg = a => a.reduce((s,w)=>s+w.kg,0)/a.length;
     const a4 = n >= 4 ? avg(asc.slice(-4)) : null, p4 = n >= 8 ? avg(asc.slice(-8,-4)) : null;
     const trend = a4 != null && p4 != null ? a4 - p4 : null;
-    const cls = d => d == null ? "flat" : d > 0.05 ? "up" : d < -0.05 ? "down" : "flat";
-    const total = last && first ? last.kg - first.kg : null;
+    const cls = v => v == null ? "flat" : v > 0.05 ? "up" : v < -0.05 ? "down" : "flat";
+    const total = last && firstW ? last.kg - firstW.kg : null;
+    const maxKg = n ? Math.max(...asc.map(w => w.kg)) : null;
     $("#stats").innerHTML = [
-      [total, `depuis le ${fmtDate(first?.date)}`, true],
-      [trend, "moyenne 4 dernières vs 4 précédentes", true],
-      [last ? goal - last.kg : null, `restants pour ${fmtKg(goal)} kg`, false],
-      [n, "pesées enregistrées", false, true]
-    ].map(([v, label, signed, raw]) => `<div class="stat"><b class="${signed ? cls(v) : ""}">${raw ? v : (signed ? fmtDelta(v) : fmtKg(v)) + " kg"}</b><small>${esc(label)}</small></div>`).join("");
+      [`<b class="${cls(total)}">${fmtDelta(total)} kg</b>`, `depuis le ${fmtDate(firstW?.date)}`],
+      [`<b class="${cls(trend)}">${fmtDelta(trend)} kg</b>`, "tendance sur 4 semaines"],
+      [`<b>${last ? fmtKg(Math.max(0, goal - last.kg)) : "—"} kg</b>`, `restants pour ${fmtKg(goal)} kg`],
+      [`<b>${fmtKg(maxKg)} kg</b>`, "record de poids"]
+    ].map(([v,l]) => `<div class="stat">${v}<small>${esc(l)}</small></div>`).join("");
 
     if(mini) mini.destroy();
     mini = window.weightChart($("#mini"), asc.slice(-12), { goal: null });
 
     const prog = D.programs.find(p => p.current) || D.programs[0];
-    $("#sessions").innerHTML = prog.sessions.map(s => `<a class="panel" href="programme.html#${encodeURIComponent(s.key)}" style="text-decoration:none;color:inherit;display:block">
-        <div style="font-family:var(--brush);font-size:26px;color:var(--orange)">${esc(s.name)}</div>
-        <div class="muted" style="font-size:14px;margin-top:4px">${s.exercises.map(e => esc(e.name)).join(", ")}</div></a>`).join("");
+    $("#sessions").innerHTML = prog.sessions.map(s => `<a class="sess" href="programme.html#${encodeURIComponent(s.key)}">
+        <span class="letter">${esc(s.key.length <= 2 ? s.key : s.key[0])}</span><b>${esc(s.name)}</b>
+        <span>${s.exercises.map(e => esc(e.name)).join(", ")}</span></a>`).join("");
+    first = false;
   }
 
   $("#quote").textContent = QUOTES[Math.floor(Date.now()/864e5) % QUOTES.length];
@@ -128,13 +149,15 @@
     const kg = num(f.kg.value); if(kg == null || kg < 30 || kg > 200){ P.toast("Poids invalide"); f.kg.focus(); return; }
     const ex = P.data.weights.find(w => w.date === f.date.value);
     if(ex && !confirm(`Une pesée existe déjà le ${fmtDate(ex.date)} (${fmtKg(ex.kg)} kg). La remplacer ?`)) return;
+    const prevMax = Math.max(...P.data.weights.filter(w => w !== ex).map(w => w.kg));
     if(ex){ ex.kg = kg; ex.note = f.note.value.trim(); }
     else P.data.weights.push({ id: P.uid("w"), date: f.date.value, kg, note: f.note.value.trim() });
-    P.save(`Pesée enregistrée : ${fmtKg(kg)} kg`);
+    P.save();
     f.kg.value = ""; f.note.value = ""; render();
+    if(window.FX){ FX.stamp(kg > prevMax ? "Nouveau record" : "Pesée validée"); FX.burstFrom($("#kg-now"), kg > prevMax ? 60 : 30); }
   };
 
-  await P.load(); render(); P.leaves();
+  await P.load(); render();
 })();
 </script>
 </body>

@@ -4,22 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Poids · PDM</title>
-<meta name="theme-color" content="#151C2A">
+<meta name="theme-color" content="#0C1126">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="PDM">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="manifest" href="manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shojumaru&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=5">
+<link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 <main>
-  <h1>Poids</h1>
-  <p class="lede">Chaque pesée du dimanche, avec ta note de la semaine. La ligne verte lisse les variations d'eau et de repas : c'est elle qu'il faut regarder.</p>
+  <div class="page-head"><div><h1>Poids</h1>
+  <p class="lede">Chaque pesée du dimanche, avec ta note de la semaine. La ligne verte lisse les variations d'eau et de repas : c'est elle qu'il faut regarder.</p></div><span class="kanji-tag" aria-hidden="true">体重</span></div>
 
   <section class="panel" aria-labelledby="h-chart">
     <div class="toolbar">
@@ -88,8 +87,9 @@
 </main>
 
 <script src="assets/chart.umd.min.js"></script>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/charts.js"></script>
+<script src="assets/app.js?v=6"></script>
+<script src="assets/fx.js?v=6"></script>
+<script src="assets/charts.js?v=6"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, $$, esc, fmtKg, fmtDelta, fmtDate, todayISO, num } = P;
@@ -136,7 +136,7 @@
       <tr data-id="${w.id}">
         <td class="num">${fmtDate(w.date)}</td>
         <td class="num"><b>${fmtKg(w.kg)}</b> kg</td>
-        <td class="num ${cls(w.delta)}">${w.delta == null ? "départ" : fmtDelta(w.delta)}</td>
+        <td class="num"><span class="delta-pill ${cls(w.delta)}">${w.delta == null ? "départ" : fmtDelta(w.delta)}</span></td>
         <td class="note">${esc(w.note) || "<span style='opacity:.5'>—</span>"}</td>
         <td class="actions" style="white-space:nowrap"><button class="icon-btn" data-act="edit" aria-label="Modifier la pesée du ${fmtDate(w.date)}">Modifier</button><button class="icon-btn danger" data-act="del" aria-label="Supprimer la pesée du ${fmtDate(w.date)}">×</button></td>
       </tr>`).join("") || `<tr><td colspan="5" class="empty">Aucune pesée ne correspond à ces filtres.</td></tr>`;
@@ -181,7 +181,7 @@
     const ex = P.data.weights.find(w => w.date === f.date.value);
     if(ex && !confirm(`Une pesée existe déjà le ${fmtDate(ex.date)}. La remplacer ?`)) return;
     if(ex){ ex.kg = kg; ex.note = f.note.value.trim(); } else P.data.weights.push({ id: P.uid("w"), date: f.date.value, kg, note: f.note.value.trim() });
-    P.save(`Pesée enregistrée : ${fmtKg(kg)} kg`); f.kg.value = ""; f.note.value = ""; redraw();
+    P.save(`Pesée enregistrée : ${fmtKg(kg)} kg`); f.kg.value = ""; f.note.value = ""; redraw(); window.FX && FX.stamp("Pesée validée");
   };
 
   const fm = $("#add-mes");

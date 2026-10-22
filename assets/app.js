@@ -189,38 +189,30 @@ function rollingAvg(asc, n=4){
 }
 
 /* ---------- navigation ---------- */
+const ICONS = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7"/><path d="M5 4a2 2 0 0 0-2 2v1h4V6a2 2 0 0 0-2-2Z"/><path d="M7 20a2 2 0 0 1-2-2V7"/><path d="M10 9h6M10 13h6M10 17h3"/></svg>',
+  weight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M4 7h16"/><path d="M4 7l-3 7a3 3 0 0 0 6 0L4 7ZM20 7l-3 7a3 3 0 0 0 6 0l-3-7Z"/></svg>',
+  prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>',
+  arch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
+  dojo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5c4 1.2 16 1.2 20 0M4 9h16M7 6.5V21M17 6.5V21M12 9v3"/></svg>'
+};
 const PAGES = [
-  ["index.html","Accueil"],["poids.html","Poids"],["programme.html","Programme"],["archives.html","Archives"],["dojo.html","Dojo"]
+  ["index.html","Accueil","home"],["poids.html","Poids","weight"],["programme.html","Programme","prog"],["archives.html","Archives","arch"],["dojo.html","Dojo","dojo"]
 ];
+const BRAND = '<svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB24D"/><stop offset="1" stop-color="#E0610B"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#bm)"/><path d="M20 6 L23.5 16.5 L34 20 L23.5 23.5 L20 34 L16.5 23.5 L6 20 L16.5 16.5 Z" fill="#1d1000"/><circle cx="20" cy="20" r="3" fill="#FFB24D"/></svg>';
 function renderShell(){
   const here = location.pathname.split("/").pop() || "index.html";
   const header = document.createElement("header");
   header.className = "topbar";
   header.innerHTML = `<div class="tape" aria-hidden="true"></div>
     <div class="topbar-in">
-      <a class="brand" href="index.html">PDM<small>Thomas</small></a>
-      <nav class="nav" aria-label="Pages">${PAGES.map(([h,l]) => `<a href="${h}"${h===here?' aria-current="page"':""}>${l}</a>`).join("")}</nav>
+      <a class="brand" href="index.html" aria-label="PDM Thomas, accueil">${BRAND}<span><b>PDM</b> <small>Thomas</small></span></a>
+      <nav class="nav" aria-label="Pages">${PAGES.map(([h,l,ic]) => `<a href="${h}"${h===here?' aria-current="page"':""}>${ICONS[ic]}<span>${l}</span></a>`).join("")}</nav>
       <a class="sync" href="reglages.html" data-s="local"${here==="reglages.html"?' aria-current="page"':""}><i></i><span>Sur cet appareil</span></a>
     </div>`;
   document.body.prepend(header);
 }
-
-function leaves(){
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const box = document.createElement("div"); box.className = "leaves"; box.setAttribute("aria-hidden","true");
-  const cols = ["#3DA157","#2B7A40","#F7811E","#7BC67E"];
-  for(let i=0;i<9;i++){
-    const l = document.createElement("div"); l.className = "leaf";
-    l.style.left = (5 + Math.random()*90) + "vw";
-    l.style.animationDelay = (Math.random()*1.6) + "s";
-    l.style.setProperty("--dx", (Math.random()*160 - 80) + "px");
-    l.style.setProperty("--rot", (Math.random()*540 - 270) + "deg");
-    l.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 20C4 10 10 4 20 4c0 10-6 16-16 16Z" fill="${cols[i%cols.length]}"/><path d="M4 20 15 9" stroke="rgba(0,0,0,.35)" stroke-width="1.2" fill="none"/></svg>`;
-    box.appendChild(l);
-  }
-  document.body.appendChild(box);
-  setTimeout(() => box.remove(), 8000);
-}
+function leaves(){ /* remplacé par le décor animé (fx.js) */ }
 
 /* ---------- programme : rendu commun ---------- */
 function lastLoad(ex, gym){
@@ -231,7 +223,7 @@ function sparkSVG(values){
   if(values.length < 2) return "";
   const w = 200, h = 34, min = Math.min(...values), max = Math.max(...values), span = (max-min) || 1;
   const pts = values.map((v,i) => `${(i/(values.length-1)*w).toFixed(1)},${(h-3-(v-min)/span*(h-6)).toFixed(1)}`).join(" ");
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#F7811E" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sparkg" x1="0" x2="1"><stop offset="0" stop-color="#4DBA74"/><stop offset="1" stop-color="#FF8A1F"/></linearGradient></defs><polyline points="${pts}" fill="none" stroke="url(#sparkg)" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
 function renderProgram(root, prog, state){
@@ -265,8 +257,12 @@ function renderProgram(root, prog, state){
       if(v == null){ $("input[name=load]", card).focus(); toast("Entre une charge en kg"); return; }
       const g = $("select[name=gym]", card).value || null;
       if(g) localStorage.setItem("pdm-gym", g);
+      const prevMax = ex.loads.filter(l => !g || !l.gym || l.gym === g).reduce((m,l) => Math.max(m, l.v), -Infinity);
       ex.loads.push({ v, gym: g, date: todayISO() });
-      save(`${fmtLoad(v)} kg ajouté sur ${ex.name}`); renderProgram(root, prog, state);
+      const isPR = ex.loads.length > 1 && v > prevMax;
+      save(isPR ? `Nouveau record : ${fmtLoad(v)} kg sur ${ex.name}` : `${fmtLoad(v)} kg ajouté sur ${ex.name}`);
+      renderProgram(root, prog, state);
+      if(isPR && window.FX){ const c = root.querySelector(`[data-ex="${ex.id}"]`); c && c.classList.add("pr"); FX.burstFrom(c && c.querySelector(".ex-max"), 40); FX.stamp("Nouveau record"); }
     }
     if(act === "del-load"){
       const i = +t.dataset.i; const l = ex.loads[i];
@@ -313,9 +309,9 @@ function exCard(ex, gym, defGym){
     <div class="ex-head">
       <div>
         <div class="ex-name">${esc(ex.name)}</div>
-        <div class="ex-scheme">${esc(ex.sets)} × ${esc(ex.reps)}${best!=null && last && best!==last.v ? ` · record ${fmtLoad(best)} kg` : ""}</div>
+        <div class="ex-scheme">${esc(ex.sets)} séries × ${esc(ex.reps)} reps${best!=null && last && best!==last.v ? ` · <span class="rec">record ${fmtLoad(best)} kg</span>` : ""}</div>
       </div>
-      ${last ? `<div class="ex-max">${fmtLoad(last.v)}<small>kg, dernière${last.date ? " · " + fmtDateShort(last.date) : ""}</small></div>` : ""}
+      ${last ? `<div class="ex-max"><b>${fmtLoad(last.v)}</b><small>kg${last.date ? " · " + fmtDateShort(last.date) : ", dernière"}</small></div>` : ""}
     </div>
     ${ex.alert ? `<div class="alert">${esc(ex.alert)}</div>` : ""}
     ${ex.details ? `<div class="details">${esc(ex.details)}</div>` : ""}
@@ -333,7 +329,7 @@ function exCard(ex, gym, defGym){
     <label class="f" style="min-width:0">Pour la prochaine fois
       <textarea class="next-note" rows="2">${esc(ex.note)}</textarea>
     </label>
-    <div style="display:flex;gap:2px;justify-content:flex-end">
+    <div class="ex-actions">
       <button class="icon-btn" data-act="move-up" aria-label="Monter">↑</button>
       <button class="icon-btn" data-act="move-down" aria-label="Descendre">↓</button>
       <button class="icon-btn" data-act="edit-ex">Modifier</button>
