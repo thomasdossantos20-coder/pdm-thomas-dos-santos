@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T08:06:38.586Z",
+ "updatedAt": "2026-10-22T08:21:39.007Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1977,6 +1977,10 @@
  "games": {
   "shuriken": {
    "scores": [
+    {
+     "s": 950,
+     "date": "2026-10-22"
+    },
     {
      "s": 395,
      "date": "2026-10-22"
