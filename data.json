@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T08:05:29.470Z",
+ "updatedAt": "2026-10-22T08:05:37.689Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1995,6 +1995,14 @@
    "scores": [
     {
      "s": 1176,
+     "date": "2026-10-22"
+    }
+   ]
+  },
+  "bambou": {
+   "scores": [
+    {
+     "s": 2,
      "date": "2026-10-22"
     }
    ]
