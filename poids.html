@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=6">
+<link rel="stylesheet" href="assets/style.css?v=8">
 </head>
 <body>
 <main>
@@ -39,7 +39,7 @@
     <form id="add" class="form-row">
       <label class="f" style="max-width:180px">Date<input type="date" name="date" required></label>
       <label class="f" style="max-width:140px">Poids (kg)<input name="kg" inputmode="decimal" placeholder="72,1" required></label>
-      <label class="f" style="flex:3;min-width:220px">Note<input name="note" placeholder="Comment s'est passée la semaine ?"></label>
+      <label class="f" data-wide style="flex:3;min-width:220px">Note<input name="note" placeholder="Comment s'est passée la semaine ?"></label>
       <button class="btn" type="submit">Enregistrer</button>
     </form>
   </section>
@@ -51,7 +51,7 @@
     </div>
     <div class="panel">
       <div class="form-row" style="margin-bottom:12px">
-        <label class="f" style="flex:2">Chercher dans les notes<input type="search" id="q" placeholder="shaker, padel, fast-food…"></label>
+        <label class="f" data-wide style="flex:2">Chercher dans les notes<input type="search" id="q" placeholder="shaker, padel, fast-food…"></label>
         <label class="f">Mois<select id="month"><option value="">Tous</option></select></label>
         <label class="f">Variation<select id="dir"><option value="">Toutes</option><option value="up">Hausses</option><option value="down">Baisses</option></select></label>
       </div>
@@ -79,7 +79,7 @@
         <datalist id="mes-names"><option>Tour de bras</option><option>Tour de taille</option><option>Tour de poitrine</option><option>Tour de cuisse</option></datalist>
         <label class="f" style="max-width:120px">Valeur (cm)<input name="value" inputmode="decimal" required></label>
         <label class="f" style="max-width:180px">Date<input type="date" name="date"></label>
-        <label class="f" style="flex:2">Note<input name="note" placeholder="Contracté, à froid…"></label>
+        <label class="f" data-wide style="flex:2">Note<input name="note" placeholder="Contracté, à froid…"></label>
         <button class="btn ghost" type="submit">Ajouter</button>
       </form>
     </div>
@@ -87,9 +87,9 @@
 </main>
 
 <script src="assets/chart.umd.min.js"></script>
-<script src="assets/app.js?v=6"></script>
-<script src="assets/fx.js?v=6"></script>
-<script src="assets/charts.js?v=6"></script>
+<script src="assets/app.js?v=8"></script>
+<script src="assets/fx.js?v=8"></script>
+<script src="assets/charts.js?v=8"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, $$, esc, fmtKg, fmtDelta, fmtDate, todayISO, num } = P;
@@ -145,8 +145,8 @@
 
   function drawMes(){
     const m = [...(P.data.measurements||[])].sort((a,b) => (b.date||"").localeCompare(a.date||""));
-    $("#mes").innerHTML = m.length ? `<div class="table-wrap"><table><thead><tr><th>Mesure</th><th>Valeur</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody>${
-      m.map(x => `<tr data-mid="${x.id}"><td>${esc(x.name)}</td><td class="num"><b>${P.fmtLoad(x.value)}</b> ${esc(x.unit||"cm")}</td><td class="num">${x.date ? fmtDate(x.date) : "non datée"}</td><td class="note">${esc(x.note)}</td><td><button class="icon-btn danger" data-mdel aria-label="Supprimer">×</button></td></tr>`).join("")
+    $("#mes").innerHTML = m.length ? `<div class="table-wrap"><table class="mes"><thead><tr><th>Mesure</th><th>Valeur</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody>${
+      m.map(x => `<tr data-mid="${x.id}"><td class="m-name">${esc(x.name)}</td><td class="num m-val"><b>${P.fmtLoad(x.value)}</b> ${esc(x.unit||"cm")}</td><td class="num m-date">${x.date ? fmtDate(x.date) : "non datée"}</td><td class="note m-note">${esc(x.note)}</td><td class="m-del"><button class="icon-btn danger" data-mdel aria-label="Supprimer">×</button></td></tr>`).join("")
     }</tbody></table></div>` : `<p class="empty">Aucune mensuration notée.</p>`;
   }
   function redraw(){ drawChart(); drawTable(); drawMes(); }

@@ -13,33 +13,21 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=6">
+<link rel="stylesheet" href="assets/style.css?v=8">
 </head>
 <body>
 <main>
   <div class="page-head"><div><h1>Dojo</h1>
-    <p class="lede">Le défi shuriken pour décompresser, puis le circuit abdos, tes recettes et tes repères du jour.</p></div>
+    <p class="lede">Quatre défis pour décompresser entre deux séries, puis le circuit abdos, tes recettes et tes repères du jour.</p></div>
     <span class="kanji-tag" aria-hidden="true">道場</span></div>
 
   <section aria-labelledby="h-game">
-    <h2 id="h-game">Défi shuriken</h2>
-    <div class="grid" style="grid-template-columns:minmax(0,1fr)">
-      <div class="game" id="game">
-        <canvas aria-label="Zone de jeu : touche les aliments pour lancer un shuriken"></canvas>
-        <div class="game-hud" aria-live="off"><span class="score">0</span><span class="combo"></span><span class="time">30 s</span></div>
-        <div class="game-overlay">
-          <div>
-            <h3>Abats la malbouffe</h3>
-            <p>Touche l'écran pour lancer un shuriken. Enchaîne la malbouffe sans rater pour monter le combo jusqu'à ×5. Touche une protéine et tu perds 15 points.</p>
-            <div class="legend-food"><span class="bad">🍔 🍟 🍕 🥤 🍩 à abattre</span><span class="good">🥛 🍗 🥚 🍌 🍚 à épargner</span></div>
-            <button class="btn big" type="button" data-start>Lancer le défi · 30 s</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel tight">
-        <h3 style="margin-bottom:10px">Tes meilleurs scores</h3>
-        <ol class="best-list" id="best"></ol>
-      </div>
+    <h2 id="h-game">Salle des défis</h2>
+    <div class="hub" id="hub"></div>
+    <div class="game" id="stage"></div>
+    <div class="panel tight" style="margin-top:16px">
+      <h3 style="margin-bottom:10px" id="best-title">Tes meilleurs scores</h3>
+      <ol class="best-list" id="best"></ol>
     </div>
   </section>
 
@@ -61,31 +49,41 @@
     </section>
   </div>
 </main>
-<script src="assets/app.js?v=6"></script>
-<script src="assets/fx.js?v=6"></script>
-<script src="assets/game.js?v=6"></script>
+<script src="assets/app.js?v=8"></script>
+<script src="assets/fx.js?v=8"></script>
+<script src="assets/games.js?v=8"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, esc, fmtDate, todayISO } = P;
   await P.load(); const D = P.data;
 
-  function drawBest(){
-    const sc = (D.game && D.game.scores) || [];
+  /* scores : un tableau par jeu, l'ancien défi shuriken est repris */
+  D.games = D.games || {};
+  if(D.game && D.game.scores && !D.games.shuriken){ D.games.shuriken = { scores: D.game.scores }; delete D.game; }
+  const scoresOf = id => (D.games[id] && D.games[id].scores) || [];
+  let cur = null;
+  function drawBest(g){
+    cur = g; const sc = scoresOf(g.id);
+    $("#best-title").textContent = `Tes meilleurs scores · ${g.name}`;
     $("#best").innerHTML = sc.length
-      ? sc.map((s,i) => `<li><span>${i === 0 ? "Record" : (i+1) + "e"} · ${fmtDate(s.date)}</span><b>${s.s}</b></li>`).join("")
+      ? sc.map((s,i) => `<li><span>${i === 0 ? "Record" : (i+1) + "e"} · ${fmtDate(s.date)}</span><b>${esc(g.fmt(s.s))}</b></li>`).join("")
       : `<li class="muted" style="justify-content:center">Aucune partie pour l'instant. À toi de poser le premier score.</li>`;
   }
-  drawBest();
-  window.ShurikenGame($("#game"), { onEnd(score){
-    D.game = D.game || { scores: [] };
-    const sc = D.game.scores, prevBest = sc.length ? sc[0].s : 0;
-    const entry = { s: score, date: todayISO() };
-    sc.push(entry); sc.sort((a,b) => b.s - a.s); D.game.scores = sc.slice(0,5);
-    const kept = D.game.scores.includes(entry);
-    if(kept && score > 0) P.save(score > prevBest ? "Nouveau record au défi shuriken" : null);
-    drawBest();
-    return { best: score > prevBest && score > 0, bestScore: Math.max(prevBest, score) };
-  }});
+  window.DojoGames($("#hub"), $("#stage"), {
+    best: id => scoresOf(id)[0] ? scoresOf(id)[0].s : null,
+    onSelect: drawBest,
+    onEnd(g, score){
+      const prev = scoresOf(g.id), prevBest = prev.length ? prev[0].s : null;
+      const better = (a, b) => g.lowerBetter ? a < b : a > b;
+      const isBest = (g.lowerBetter || score > 0) && (prevBest == null || better(score, prevBest));
+      if(g.lowerBetter || score > 0){
+        const entry = { s: score, date: todayISO() }, list = [...prev, entry].sort((a,b) => g.lowerBetter ? a.s - b.s : b.s - a.s).slice(0,5);
+        D.games[g.id] = { scores: list };
+        if(list.includes(entry)) P.save(isBest ? `Nouveau record · ${g.name}` : null);
+      }
+      return { best: isBest, bestScore: isBest ? score : (prevBest ?? score) };
+    }
+  });
 
   $("#nut").innerHTML = [[D.nutrition.kcal,"calories"],[D.nutrition.protein,"protéines"]].map(([v,l]) => `<div class="stat"><b style="font-size:22px">${esc(v)}</b><small>${l}</small></div>`).join("");
   $("#abs-meta").textContent = `${D.abs.freq}. ${D.abs.duration}.`;
