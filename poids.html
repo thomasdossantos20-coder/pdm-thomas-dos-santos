@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=8">
+<link rel="stylesheet" href="assets/style.css?v=9">
 </head>
 <body>
 <main>
@@ -87,13 +87,13 @@
 </main>
 
 <script src="assets/chart.umd.min.js"></script>
-<script src="assets/app.js?v=8"></script>
-<script src="assets/fx.js?v=8"></script>
-<script src="assets/charts.js?v=8"></script>
+<script src="assets/app.js?v=9"></script>
+<script src="assets/fx.js?v=9"></script>
+<script src="assets/charts.js?v=9"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, $$, esc, fmtKg, fmtDelta, fmtDate, todayISO, num } = P;
-  let chart, range = 0, showAvg = true, showGoal = false, sort = { key: "date", dir: -1 }, editing = null;
+  let showAll = false, chart, range = 0, showAvg = true, showGoal = false, sort = { key: "date", dir: -1 }, editing = null;
   const MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
   function inRange(){
@@ -125,6 +125,7 @@
     rows.sort((a,b) => { const x = a[sort.key], y = b[sort.key]; if(x == null) return 1; if(y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; });
     $$("[data-sort]").forEach(b => { b.toggleAttribute("data-active", b.dataset.sort === sort.key); b.textContent = b.textContent.replace(/ [↑↓]$/,"") + (b.dataset.sort === sort.key ? (sort.dir < 0 ? " ↓" : " ↑") : ""); });
     const cls = d => d == null ? "flat" : d > 0 ? "up" : d < 0 ? "down" : "flat";
+    const total = rows.length; if(!showAll) rows = rows.slice(0, 5);
     $("#tbl tbody").innerHTML = rows.map(w => editing === w.id ? `
       <tr class="editing" data-id="${w.id}">
         <td><input type="date" name="date" value="${w.date}"></td>
@@ -140,7 +141,9 @@
         <td class="note">${esc(w.note) || "<span style='opacity:.5'>—</span>"}</td>
         <td class="actions" style="white-space:nowrap"><button class="icon-btn" data-act="edit" aria-label="Modifier la pesée du ${fmtDate(w.date)}">Modifier</button><button class="icon-btn danger" data-act="del" aria-label="Supprimer la pesée du ${fmtDate(w.date)}">×</button></td>
       </tr>`).join("") || `<tr><td colspan="5" class="empty">Aucune pesée ne correspond à ces filtres.</td></tr>`;
-    $("#count").textContent = `${rows.length} pesée${rows.length>1?"s":""} affichée${rows.length>1?"s":""} sur ${all.length}.`;
+    $("#count").innerHTML = `${rows.length} pesée${rows.length>1?"s":""} affichée${rows.length>1?"s":""} sur ${total}${total !== all.length ? " (filtre actif)" : ""}.`
+      + (total > 5 ? ` <button class="btn ghost sm" id="more" type="button" style="margin-left:8px">${showAll ? "Réduire aux 5 dernières" : `Tout afficher (${total})`}</button>` : "");
+    const more = $("#more"); if(more) more.onclick = () => { showAll = !showAll; drawTable(); if(!showAll) $("#h-hist").scrollIntoView({block:"start"}); };
   }
 
   function drawMes(){

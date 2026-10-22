@@ -373,6 +373,10 @@ tr.editing td{background:rgba(255,138,31,.07)}
 .best-list li b{font-family:var(--display);font-weight:400;color:var(--flame-hi)}
 .best-list li:first-child{background:linear-gradient(90deg,rgba(255,138,31,.2),rgba(255,255,255,.03))}
 
+/* zone de jeu : défilement vertical seulement, pas de zoom */
+.game, .game *{touch-action:pan-y}
+.hub, .hub *{touch-action:manipulation}
+
 /* Dégaine le kunai */
 .rx{position:absolute;inset:0;display:grid;place-items:center;text-align:center;cursor:pointer;transition:background .12s}
 .rx[data-st="wait"]{background:radial-gradient(90% 80% at 50% 45%,#16204A,#080C1E)}

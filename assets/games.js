@@ -166,7 +166,7 @@ const memoire = {
       later(() => { accept = true; pos = 0; btns.forEach(b => b.disabled = false); msg.textContent = "À toi"; }, 500 + seq.length*sp);
     }
     function nextLevel(){ seq.push(Math.floor(Math.random()*4)); lvl.textContent = `Niveau ${seq.length}`; play(); }
-    btns.forEach(b => b.addEventListener("click", () => {
+    btns.forEach(b => onTap(b, () => {
       if(!run || !accept) return; const i = +b.dataset.i; light(i, 220);
       if(i !== seq[pos]){ run = false; accept = false; btns.forEach(x => x.disabled = true); vibrate([60,40,60]); tone(110,350,"sawtooth",.06);
         b.classList.add("wrong"); later(() => b.classList.remove("wrong"), 600);
@@ -250,6 +250,14 @@ window.DojoGames = function(hub, stageWrap, opts){
     if(scroll) stageWrap.scrollIntoView({ block:"nearest", behavior: FX().RM ? "auto" : "smooth" });
   }
   hub.addEventListener("click", e => { const b = e.target.closest("[data-game]"); if(b) select(b.dataset.game, true); });
+  /* Pas de zoom sur la zone de jeu : ni double appui, ni pincement. Le glissé vertical fait toujours défiler. */
+  let lastEnd = 0;
+  [hub, stageWrap].forEach(el => {
+    el.addEventListener("touchend", e => { const n = e.timeStamp; if(n - lastEnd < 400 && e.changedTouches.length === 1){ e.preventDefault(); } lastEnd = n; }, { passive:false });
+    el.addEventListener("dblclick", e => e.preventDefault());
+    ["gesturestart","gesturechange"].forEach(t => el.addEventListener(t, e => e.preventDefault(), { passive:false }));
+    el.addEventListener("touchmove", e => { if(e.touches.length > 1) e.preventDefault(); }, { passive:false });
+  });
   select(LIST[0].id, false);
   return { select, list: LIST };
 };
