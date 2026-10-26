@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T18:20:33.456Z",
+ "updatedAt": "2026-10-26T18:20:40.561Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -406,6 +406,11 @@
          "v": 65,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 70,
+         "gym": "Paris",
+         "date": "2026-10-26"
         }
        ],
        "note": "Faire 70"
