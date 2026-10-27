@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T18:20:47.790Z",
+ "updatedAt": "2026-10-27T06:55:48.260Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -188,6 +188,12 @@
    "date": "2026-09-20",
    "kg": 71.8,
    "note": "Ok bizarre en vrai"
+  },
+  {
+   "id": "wmvqc07j83by7",
+   "date": "2026-10-27",
+   "kg": 71.9,
+   "note": ""
   }
  ],
  "measurements": [
