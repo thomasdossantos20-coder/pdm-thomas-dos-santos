@@ -238,7 +238,8 @@ function renderProgram(root, prog, state){
       <div class="seg" role="group" aria-label="Séance">${sessions.map(s => `<button data-sess="${esc(s.key)}" aria-pressed="${s.key===state.session}">${esc(s.name)}</button>`).join("")}</div>
       <div class="seg" role="group" aria-label="Salle">${[["all","Toutes salles"],["Paris","Paris"],["Courbevoie","Courbevoie"]].map(([k,l]) => `<button data-gym="${k}" aria-pressed="${k===gym}">${l}</button>`).join("")}</div>
     </div>
-    <div class="legend-gym" style="margin-bottom:14px"><span class="lp">Paris</span><span class="lc">Courbevoie</span><span>Sans marque : salle non précisée</span></div>
+    ${sess.note ? `<div class="details" style="margin-bottom:14px"><b>${esc(sess.freq || "")}</b>${sess.freq ? " · " : ""}${esc(sess.note)}</div>` : ""}
+    <div class="legend-gym" style="margin-bottom:14px${sess.exercises.every(x => x.kind === "stretch") ? ";display:none" : ""}"><span class="lp">Paris</span><span class="lc">Courbevoie</span><span>Sans marque : salle non précisée</span></div>
     <div class="ex-list">
       ${sess.exercises.map(ex => exCard(ex, gym, defGym)).join("")}
     </div>
@@ -304,12 +305,13 @@ function exCard(ex, gym, defGym){
   const best = shown.length ? Math.max(...shown.map(l => l.v)) : null;
   const gymClass = g => g === "Paris" ? "paris" : g === "Courbevoie" ? "courbevoie" : "";
   const chips = shown.map((l,k) => `<span class="chip ${gymClass(l.gym)}${k===shown.length-1?" last":""}" title="${l.gym?esc(l.gym):"Salle non précisée"}${l.date?" · "+fmtDate(l.date):""}${l.label?" · "+esc(l.label):""}">${fmtLoad(l.v)}${l.label?` <small>(${esc(l.label)})</small>`:""}<button data-act="del-load" data-i="${l.i}" aria-label="Supprimer ${fmtLoad(l.v)} kg">×</button></span>`).join("");
-  const hasLoads = ex.loads.length > 0 || ex.reps !== "max";
+  const stretch = ex.kind === "stretch";
+  const hasLoads = !stretch && (ex.loads.length > 0 || ex.reps !== "max");
   return `<article class="ex" data-ex="${ex.id}">
     <div class="ex-head">
       <div>
         <div class="ex-name">${esc(ex.name)}</div>
-        <div class="ex-scheme">${esc(ex.sets)} séries × ${esc(ex.reps)} reps${best!=null && last && best!==last.v ? ` · <span class="rec">record ${fmtLoad(best)} kg</span>` : ""}</div>
+        <div class="ex-scheme">${stretch ? `${esc(ex.sets)} passage${+ex.sets>1?"s":""} × ${esc(ex.reps)}` : `${esc(ex.sets)} séries × ${esc(ex.reps)} reps`}${best!=null && last && best!==last.v ? ` · <span class="rec">record ${fmtLoad(best)} kg</span>` : ""}</div>
       </div>
       ${last ? `<div class="ex-max"><b>${fmtLoad(last.v)}</b><small>kg${last.date ? " · " + fmtDateShort(last.date) : ", dernière"}</small></div>` : ""}
     </div>
