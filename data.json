@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-04T11:32:17.662Z",
+ "updatedAt": "2026-11-04T12:00:00.813Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -566,9 +566,14 @@
          "v": 90,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 100,
+         "gym": "Courbevoie",
+         "date": "2026-11-04"
         }
        ],
-       "note": "Faire 100"
+       "note": "Faire 100 bien contrôler"
       },
       {
        "id": "e10",
