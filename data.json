@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-06T18:23:16.502Z",
+ "updatedAt": "2026-11-06T18:23:22.153Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -756,6 +756,11 @@
          "v": 15,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 17.5,
+         "gym": "Courbevoie",
+         "date": "2026-11-06"
         }
        ],
        "note": "Faire 17,5propre, encore bien contrôler le mouvement"
