@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-06T18:25:12.854Z",
+ "updatedAt": "2026-11-06T18:42:40.517Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -278,6 +278,50 @@
        "note": "Faire des 30 au moins 4 contrôlé"
       },
       {
+       "id": "e5",
+       "name": "Tirage vertical",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 60,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 65,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 70,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Tenter 70 bien"
+      },
+      {
        "id": "e2",
        "name": "Curl marteau haltères",
        "sets": 3,
@@ -363,50 +407,6 @@
         }
        ],
        "note": "Tenter 45"
-      },
-      {
-       "id": "e5",
-       "name": "Tirage vertical",
-       "sets": 3,
-       "reps": "10",
-       "loads": [
-        {
-         "v": 40,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 45,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 50,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 55,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 60,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 65,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 70,
-         "gym": null,
-         "date": null
-        }
-       ],
-       "note": "Tenter 70 bien"
       },
       {
        "id": "e6",
@@ -496,6 +496,25 @@
         }
        ],
        "note": "Faire 57,5"
+      },
+      {
+       "id": "e11",
+       "name": "Tirage horizontal",
+       "sets": 3,
+       "reps": "8",
+       "loads": [
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 55,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 60"
       },
       {
        "id": "e8",
@@ -640,25 +659,6 @@
        "note": "Faire 92,5 bien propre contrôler"
       },
       {
-       "id": "e11",
-       "name": "Tirage horizontal",
-       "sets": 3,
-       "reps": "8",
-       "loads": [
-        {
-         "v": 50,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 55,
-         "gym": null,
-         "date": null
-        }
-       ],
-       "note": "Faire 60"
-      },
-      {
        "id": "e12",
        "name": "Élévations latérales haltères",
        "sets": 3,
@@ -716,6 +716,55 @@
         }
        ],
        "note": "Faire 25 bien contrôler coude qui bouge pas"
+      },
+      {
+       "id": "e17",
+       "name": "Upper back",
+       "sets": 3,
+       "reps": "10",
+       "loads": [
+        {
+         "v": 25,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 30,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 35,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 40,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 42.5,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 45,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 50,
+         "gym": null,
+         "date": null
+        },
+        {
+         "v": 52.5,
+         "gym": null,
+         "date": null
+        }
+       ],
+       "note": "Faire 55 bien contrôlé quitte à descendre"
       },
       {
        "id": "e14",
@@ -783,55 +832,6 @@
         }
        ],
        "note": "Faire bien 40 encore"
-      },
-      {
-       "id": "e17",
-       "name": "Upper back",
-       "sets": 3,
-       "reps": "10",
-       "loads": [
-        {
-         "v": 25,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 30,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 35,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 40,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 42.5,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 45,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 50,
-         "gym": null,
-         "date": null
-        },
-        {
-         "v": 52.5,
-         "gym": null,
-         "date": null
-        }
-       ],
-       "note": "Faire 55 bien contrôlé quitte à descendre"
       },
       {
        "id": "e18",
