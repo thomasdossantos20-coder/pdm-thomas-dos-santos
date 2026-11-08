@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-08T13:30:45.267Z",
+ "updatedAt": "2026-11-08T22:43:59.115Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -216,6 +216,14 @@
    "value": 33.5,
    "unit": "cm",
    "note": "Contracté après 70 pompes"
+  },
+  {
+   "id": "mmw8f5ssr0prp",
+   "name": "Tour de bras",
+   "value": 31,
+   "unit": "cm",
+   "date": "2026-11-08",
+   "note": "À froid"
   }
  ],
  "programs": [
