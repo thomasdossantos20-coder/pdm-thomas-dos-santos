@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-08T22:43:59.115Z",
+ "updatedAt": "2026-11-08T22:44:20.180Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -224,6 +224,14 @@
    "unit": "cm",
    "date": "2026-11-08",
    "note": "À froid"
+  },
+  {
+   "id": "mmw8f691w8maq",
+   "name": "Tour de bras",
+   "value": 35,
+   "unit": "cm",
+   "date": "2026-11-08",
+   "note": "Contracté"
   }
  ],
  "programs": [
