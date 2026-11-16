@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-16T19:25:15.472Z",
+ "updatedAt": "2026-11-16T21:47:38.814Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1147,16 +1147,6 @@
        "note": "",
        "kind": "stretch",
        "details": "Talon vers la fesse, genoux joints, bassin rentré. Le quadriceps tire sur le bassin vers l'avant."
-      },
-      {
-       "id": "st5",
-       "name": "Bascule du bassin au sol",
-       "sets": 2,
-       "reps": "10 reps lentes",
-       "loads": [],
-       "note": "",
-       "kind": "stretch",
-       "details": "Sur le dos genoux pliés, aplatir le bas du dos contre le sol en serrant les abdos, tenir 3 s, relâcher."
       },
       {
        "id": "st6",
