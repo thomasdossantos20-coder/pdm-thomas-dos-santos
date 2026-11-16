@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-16T19:05:28.862Z",
+ "updatedAt": "2026-11-16T19:17:43.716Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -458,6 +458,11 @@
          "v": 70,
          "gym": "Courbevoie",
          "date": "2026-10-26"
+        },
+        {
+         "v": 75,
+         "gym": "Courbevoie",
+         "date": "2026-11-16"
         }
        ],
        "note": "Faire 70"
