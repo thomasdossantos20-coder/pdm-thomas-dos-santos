@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-13T18:05:08.309Z",
+ "updatedAt": "2026-11-16T19:02:03.412Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -434,6 +434,11 @@
          "v": 40,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 45,
+         "gym": "Courbevoie",
+         "date": "2026-11-16"
         }
        ],
        "note": "Tenter 45"
