@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-18T18:17:19.248Z",
+ "updatedAt": "2026-11-18T18:52:55.988Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -656,6 +656,11 @@
          "v": 100,
          "gym": "Courbevoie",
          "date": "2026-11-04"
+        },
+        {
+         "v": 110,
+         "gym": "Courbevoie",
+         "date": "2026-11-18"
         }
        ],
        "note": "Faire 110 bien contrôler et BIEN s’échauffer"
