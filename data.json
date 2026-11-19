@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-19T13:31:07.157Z",
+ "updatedAt": "2026-11-19T13:32:28.733Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2270,5 +2270,20 @@
   "kcalMin": 3000,
   "kcalMax": 3200,
   "protMin": 130
+ },
+ "coach": {
+  "notes": {},
+  "chat": [
+   {
+    "r": "u",
+    "t": "Ça va",
+    "at": "2026-11-19T13:32:01.331Z"
+   },
+   {
+    "r": "m",
+    "t": "Salut Thomas. On est le 19 novembre et ça ne va pas sur le plan du suivi.\n\nCôté nutrition, c’est le vide total : aucune donnée notée depuis 7 jours. Tu vises 3000-3200 kcal et 130 g de protéines pour ta prise de masse, mais sans suivi, tu navigues à vue. Résultat : tu es redescendu à 71,9 kg le 17 novembre, soit une perte de 600 g en neuf jours. Tu stagnes ou tu recules, c'est le coût direct du manque de rigueur alimentaire.\n\nCôté entraînement, ta dernière séance notée (B) date d'hier à Courbevoie. C'est bien pour le développé incliné et les dips, mais attention : respecte strictement la consigne kiné sur la Shoulder Press (5 kg max). Ne joue pas avec ça.\n\nReprends immédiatement ton journal alimentaire. Si tu ne manges pas assez, tes records en salle ne bougeront plus et ton objectif de 75 kg s'éloignera. Remplis tes calories dès aujourd'hui.",
+    "at": "2026-11-19T13:32:28.733Z"
+   }
+  ]
  }
 }
