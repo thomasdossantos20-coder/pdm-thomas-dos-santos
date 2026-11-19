@@ -356,26 +356,34 @@ const gemCfg = {
 /* gemini({ parts | history, schema?, system?, temperature? }) → objet JSON si schema, sinon texte.
    Essaie les modèles dans l'ordre : si Google est surchargé (503), en quota (429), ne répond pas ou a fermé
    le modèle (404), on passe au suivant. Flash d'abord (plus précis), Flash Lite en secours (rapide, dispo). */
-const GCHAIN = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.8-flash"];
+const GCHAIN = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.8-flash"];
+/* modèle en panne mis de côté : 15 min (surcharge, quota, pas de réponse), 7 jours (fermé) */
+const GSKIP = "pdm-gemini-skip";
+const skipGet = () => { try { return JSON.parse(lsGet(GSKIP) || "{}"); } catch(e){ return {}; } };
+const skipSet = (m, ms) => { const o = skipGet(); o[m] = Date.now() + ms; lsSet(GSKIP, JSON.stringify(o)); };
+const skipDel = m => { const o = skipGet(); if(o[m]){ delete o[m]; lsSet(GSKIP, JSON.stringify(o)); } };
 const NOTHINK_KO = new Set();
 async function gemini(o){
   const key = gemCfg.key;
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
-  const chain = [...new Set([gemCfg.model, ...GCHAIN].filter(Boolean))];
+  const all = [...new Set([gemCfg.model, ...GCHAIN].filter(Boolean))], sk = skipGet(), now = Date.now();
+  const ok = all.filter(m => !(sk[m] > now));
+  const chain = ok.length ? [...ok, ...all.filter(m => !ok.includes(m))] : all; /* les modèles mis de côté restent en tout dernier recours */
   const gc = { temperature: o.temperature ?? 0.2 };
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
   /* thinkingBudget: 0 = pas de « réflexion », réponse plus rapide ; si le modèle refuse ce réglage, on relance sans */
   const withThink = JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: { thinkingBudget: 0 } } }), plain = JSON.stringify(body), fails = [];
-  for(const model of chain){
+  for(const [i, model] of chain.entries()){
     let r, payload = NOTHINK_KO.has(model) ? plain : withThink;
+    const wait = i < chain.length - 1 ? 25000 : 50000;
     for(let attempt = 0; attempt < 2; attempt++){
-      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 45000);
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), wait);
       try{
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
           method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
-      }catch(e){ r = null; fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); }
+      }catch(e){ r = null; fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); if(e.name === "AbortError") skipSet(model, 15*60e3); }
       clearTimeout(timer);
       if(r && r.status === 400 && payload === withThink){
         const msg = await r.clone().json().then(j => (j.error && j.error.message) || "").catch(() => "");
@@ -387,14 +395,14 @@ async function gemini(o){
     if(!r.ok){
       let msg = ""; try { msg = (await r.json()).error.message || ""; } catch(e){}
       if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
-      if([404, 429, 500, 503, 504].includes(r.status)){ fails.push(`${model} : ${r.status === 503 ? "surchargé" : r.status === 429 ? "quota" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
+      if([404, 429, 500, 503, 504].includes(r.status)){ skipSet(model, r.status === 404 ? 7*864e5 : 15*60e3); fails.push(`${model} : ${r.status === 503 ? "surchargé" : r.status === 429 ? "quota" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
       throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg.slice(0, 160) : ""));
     }
     const j = await r.json();
     const c = j.candidates && j.candidates[0];
     const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
     if(!txt){ fails.push(`${model} : réponse vide${c && c.finishReason ? " (" + c.finishReason + ")" : ""}`); continue; }
-    gemCfg.lastModel = model;
+    gemCfg.lastModel = model; skipDel(model);
     return o.schema ? JSON.parse(txt) : txt;
   }
   if(!navigator.onLine) throw new Error("Pas de connexion internet.");
