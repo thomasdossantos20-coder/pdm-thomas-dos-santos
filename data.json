@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-19T13:30:58.590Z",
+ "updatedAt": "2026-11-19T13:31:07.157Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2264,21 +2264,7 @@
    ]
   }
  },
- "meals": {
-  "2026-11-19": [
-   {
-    "id": "mmwnl8zviq9q2",
-    "n": "Pomme",
-    "g": 100,
-    "k": 53,
-    "p": 0.3,
-    "c": 11.5,
-    "l": 0.2,
-    "m": "dej",
-    "src": "base"
-   }
-  ]
- },
+ "meals": {},
  "customFoods": [],
  "calTargets": {
   "kcalMin": 3000,
