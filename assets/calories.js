@@ -32,8 +32,8 @@ let mode = "photo"; try { mode = localStorage.getItem("pdm-cal-mode") || "photo"
 const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, edit: null };
 
 /* ---------- Gemini : prompts ---------- */
-const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. Si ce n'est pas de la nourriture, renvoie une liste vide. Noms en français, courts.";
-const PROMPT_FOOD = a => `Donne les valeurs nutritionnelles moyennes POUR 100 GRAMMES de cet aliment tel qu'on le mange : « ${a} ». Appuie-toi sur la table Ciqual quand c'est possible. Nom court en français.`;
+const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. En cas de doute sur une quantité ou une valeur, prends toujours l'estimation basse de la fourchette plutôt que la haute (mieux vaut sous-estimer que surestimer). Si ce n'est pas de la nourriture, renvoie une liste vide. Noms en français, courts.";
+const PROMPT_FOOD = a => `Donne les valeurs nutritionnelles moyennes POUR 100 GRAMMES de cet aliment tel qu'on le mange : « ${a} ». Appuie-toi sur la table Ciqual quand c'est possible. En cas de doute, prends la valeur basse de la fourchette plutôt que la haute. Nom court en français.`;
 const NUM = { type: "NUMBER" }, STR = { type: "STRING" };
 const SCHEMA_PHOTO = { type: "OBJECT", properties: {
   aliments: { type: "ARRAY", items: { type: "OBJECT", properties: { nom: STR, grammes: NUM, kcal: NUM, proteines: NUM, glucides: NUM, lipides: NUM },
