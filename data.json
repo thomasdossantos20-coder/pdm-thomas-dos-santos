@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-18T18:52:55.988Z",
+ "updatedAt": "2026-11-19T13:11:42.590Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2263,5 +2263,20 @@
     }
    ]
   }
+ },
+ "coach": {
+  "notes": {},
+  "chat": [
+   {
+    "r": "u",
+    "t": "Ça va",
+    "at": "2026-11-19T13:11:40.324Z"
+   },
+   {
+    "r": "m",
+    "t": "Salut Thomas. On est le 19 novembre et ça ne va pas sur le plan du suivi.\n\nCôté nutrition, c’est le vide total : aucune donnée notée depuis 7 jours. Tu vises une prise de masse à 3200 kcal et 130 g de protéines, mais sans noter, tu navigues à vue. Résultat : tu es redescendu à 71,9 kg le 17 novembre, alors que tu avais atteint 72,5 kg début novembre. Tu perds du poids au lieu d'en prendre. Si tu ne manges pas assez, tes séances ne serviront à rien.\n\nCôté entraînement, ta dernière séance notée est la B hier à Courbevoie. C’est bien pour le développé incliné (60 kg), mais attention : pour ta prochaine séance D, respecte strictement l'alerte kiné sur le Shoulder Press. C'est 5 kg max, pas un gramme de plus.\n\nReprends ton journal alimentaire immédiatement si tu veux atteindre tes 75 kg. Sans carburant, pas de muscle.",
+    "at": "2026-11-19T13:11:42.590Z"
+   }
+  ]
  }
 }
