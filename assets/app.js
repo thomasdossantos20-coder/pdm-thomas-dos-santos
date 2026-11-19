@@ -368,7 +368,8 @@ async function gemini(o){
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
   const all = [...new Set([gemCfg.model, ...GCHAIN].filter(Boolean))], sk = skipGet(), now = Date.now();
   const ok = all.filter(m => !(sk[m] > now));
-  const chain = ok.length ? [...ok, ...all.filter(m => !ok.includes(m))] : all; /* les modèles mis de côté restent en tout dernier recours */
+  let chain = ok.length ? [...ok, ...all.filter(m => !ok.includes(m))] : all;
+  if(o.avoid && o.avoid.length){ const av = chain.filter(m => o.avoid.includes(m)); chain = [...chain.filter(m => !o.avoid.includes(m)), ...av]; } /* les modèles mis de côté restent en tout dernier recours */
   const gc = { temperature: o.temperature ?? 0.2 };
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
@@ -438,7 +439,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad, version: 20 };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad, version: 21 };
 
 renderShell();
 })();

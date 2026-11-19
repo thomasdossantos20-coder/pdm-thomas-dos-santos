@@ -32,7 +32,7 @@ let mode = "photo"; try { mode = localStorage.getItem("pdm-cal-mode") || "photo"
 const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, edit: null };
 
 /* ---------- Gemini : prompts ---------- */
-const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. En cas de doute sur une quantité ou une valeur, prends toujours l'estimation basse de la fourchette plutôt que la haute (mieux vaut sous-estimer que surestimer). Si ce n'est pas de la nourriture, renvoie une liste vide. Noms en français, courts.";
+const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. En cas de doute sur une quantité ou une valeur, prends toujours l'estimation basse de la fourchette plutôt que la haute (mieux vaut sous-estimer que surestimer). Si tu hésites sur un aliment, liste-le quand même avec ta meilleure estimation basse. Renvoie une liste vide seulement s'il n'y a vraiment aucune nourriture sur la photo, et explique pourquoi dans le commentaire. Noms en français, courts.";
 const PROMPT_FOOD = a => `Donne les valeurs nutritionnelles moyennes POUR 100 GRAMMES de cet aliment tel qu'on le mange : « ${a} ». Appuie-toi sur la table Ciqual quand c'est possible. En cas de doute, prends la valeur basse de la fourchette plutôt que la haute. Nom court en français.`;
 const NUM = { type: "NUMBER" }, STR = { type: "STRING" };
 const SCHEMA_PHOTO = { type: "OBJECT", properties: {
@@ -252,7 +252,7 @@ function photoBlock(){
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn green" data-act="ph-add">Ajouter ${fmt(tot.kcal)} kcal</button>
         <button class="btn ghost sm" data-act="ph-cancel">Annuler</button>
-      </div>` : `<p class="muted">Aucun aliment reconnu sur cette photo.</p><button class="btn ghost sm" data-act="ph-cancel" style="justify-self:start">Fermer</button>`) : ""}
+      </div>` : `<p class="muted">Aucun aliment reconnu sur cette photo.${ph.comment ? " Gemini dit : " + esc(ph.comment) : ""} <span class="muted">(modèle : ${esc(ph.model || "?")})</span></p><button class="btn ghost sm" data-act="ph-cancel" style="justify-self:start">Fermer</button>`) : ""}
   </div>`;
 }
 
@@ -377,10 +377,13 @@ function bindAdd(){
     let img; try { img = await shrink(file); } catch(err){ toast(err.message); return; }
     state.photo = { url: img.url, items: null }; state.busy = "photo"; renderAdd();
     try{
-      const res = await P.gemini({ parts: [{ text: PROMPT_PHOTO }, { inline_data: { mime_type: "image/jpeg", data: img.b64 } }], schema: SCHEMA_PHOTO });
-      state.photo.items = (res.aliments || []).filter(a => a.grammes > 0).map(a => ({ n: a.nom, g: a.grammes, on: true,
+      const ask = avoid => P.gemini({ parts: [{ text: PROMPT_PHOTO }, { inline_data: { mime_type: "image/jpeg", data: img.b64 } }], schema: SCHEMA_PHOTO, avoid });
+      const clean = r => (r.aliments || []).filter(a => a.grammes > 0);
+      let res = await ask(), used = P.gemCfg.lastModel;
+      if(!clean(res).length){ try{ const r2 = await ask([used]); if(clean(r2).length){ res = r2; used = P.gemCfg.lastModel; } }catch(e){} }
+      state.photo.items = clean(res).map(a => ({ n: a.nom, g: a.grammes, on: true,
         k: a.kcal / a.grammes * 100, p: a.proteines / a.grammes * 100, c: a.glucides / a.grammes * 100, l: a.lipides / a.grammes * 100 }));
-      state.photo.comment = res.commentaire || "";
+      state.photo.comment = res.commentaire || ""; state.photo.model = used;
     }catch(err){ state.photo.err = err.message; }
     state.busy = false; renderAdd();
   });
