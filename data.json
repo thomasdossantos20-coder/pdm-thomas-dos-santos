@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-19T13:20:35.922Z",
+ "updatedAt": "2026-11-19T13:20:42.267Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2279,21 +2279,7 @@
    }
   ]
  },
- "meals": {
-  "2026-11-19": [
-   {
-    "id": "mmwnkvnf6788i",
-    "n": "Brioche DooWap Harrys",
-    "g": 35,
-    "k": 365.7,
-    "p": 8,
-    "c": 52,
-    "l": 14,
-    "m": "dej",
-    "src": "photo"
-   }
-  ]
- },
+ "meals": {},
  "customFoods": [],
  "calTargets": {
   "kcalMin": 3000,
