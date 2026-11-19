@@ -353,38 +353,42 @@ const gemCfg = {
   get model(){ return lsGet(GMODEL); }, set model(v){ lsSet(GMODEL, v); },
   defaultModel: GDEFAULT
 };
-/* gemini({ parts | history, schema?, system?, temperature? }) → objet JSON si schema, sinon texte */
-async function gemini(o, retried){
+/* gemini({ parts | history, schema?, system?, temperature? }) → objet JSON si schema, sinon texte.
+   Essaie les modèles dans l'ordre : si Google est surchargé (503), en quota (429), ne répond pas ou a fermé
+   le modèle (404), on passe au suivant. Flash d'abord (plus précis), Flash Lite en secours (rapide, dispo). */
+const GCHAIN = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.8-flash"];
+async function gemini(o){
   const key = gemCfg.key;
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
-  const model = gemCfg.model || GDEFAULT;
+  const chain = [...new Set([gemCfg.model, ...GCHAIN].filter(Boolean))];
   const gc = { temperature: o.temperature ?? 0.2 };
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
-  let r;
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 90000), t0 = Date.now();
-  try{
-    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
-  }catch(e){ const sec = Math.round((Date.now() - t0) / 1000);
-    throw new Error(e.name === "AbortError" ? `Gemini (${model}) met trop de temps à répondre. Réessaie.` : `Gemini injoignable (${model}, ${sec} s : ${e.message || e.name}).`); }
-  finally{ clearTimeout(timer); }
-  if(r.status === 404 && !retried){ /* modèle retiré par Google : on prend le Flash stable le plus récent */
-    const m = await pickModel(key);
-    if(m && m !== model){ gemCfg.model = m; return gemini(o, true); }
+  const payload = JSON.stringify(body), fails = [];
+  for(const model of chain){
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 45000);
+    let r;
+    try{
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
+    }catch(e){ clearTimeout(timer); fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); continue; }
+    clearTimeout(timer);
+    if(!r.ok){
+      let msg = ""; try { msg = (await r.json()).error.message || ""; } catch(e){}
+      if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
+      if([404, 429, 500, 503, 504].includes(r.status)){ fails.push(`${model} : ${r.status === 503 ? "surchargé" : r.status === 429 ? "quota" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
+      throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg.slice(0, 160) : ""));
+    }
+    const j = await r.json();
+    const c = j.candidates && j.candidates[0];
+    const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
+    if(!txt){ fails.push(`${model} : réponse vide${c && c.finishReason ? " (" + c.finishReason + ")" : ""}`); continue; }
+    gemCfg.lastModel = model;
+    return o.schema ? JSON.parse(txt) : txt;
   }
-  if(!r.ok){
-    let msg = ""; try { msg = (await r.json()).error.message; } catch(e){}
-    if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
-    if(r.status === 429) throw new Error(`Quota Gemini atteint sur ${model}. Réessaie dans une minute.`);
-    throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg : ""));
-  }
-  const j = await r.json();
-  const c = j.candidates && j.candidates[0];
-  const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
-  if(!txt) throw new Error("Gemini n'a rien renvoyé" + (c && c.finishReason ? " (" + c.finishReason + ")" : "") + ".");
-  return o.schema ? JSON.parse(txt) : txt;
+  if(!navigator.onLine) throw new Error("Pas de connexion internet.");
+  throw new Error("Gemini indisponible pour l'instant (" + fails.join(", ") + "). Réessaie dans quelques minutes.");
 }
 async function pickModel(key){
   try{
