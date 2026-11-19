@@ -357,6 +357,7 @@ const gemCfg = {
    Essaie les modèles dans l'ordre : si Google est surchargé (503), en quota (429), ne répond pas ou a fermé
    le modèle (404), on passe au suivant. Flash d'abord (plus précis), Flash Lite en secours (rapide, dispo). */
 const GCHAIN = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.8-flash"];
+const NOTHINK_KO = new Set();
 async function gemini(o){
   const key = gemCfg.key;
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
@@ -365,15 +366,24 @@ async function gemini(o){
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
-  const payload = JSON.stringify(body), fails = [];
+  /* thinkingBudget: 0 = pas de « réflexion », réponse plus rapide ; si le modèle refuse ce réglage, on relance sans */
+  const withThink = JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: { thinkingBudget: 0 } } }), plain = JSON.stringify(body), fails = [];
   for(const model of chain){
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 45000);
-    let r;
-    try{
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
-    }catch(e){ clearTimeout(timer); fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); continue; }
-    clearTimeout(timer);
+    let r, payload = NOTHINK_KO.has(model) ? plain : withThink;
+    for(let attempt = 0; attempt < 2; attempt++){
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 45000);
+      try{
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
+      }catch(e){ r = null; fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); }
+      clearTimeout(timer);
+      if(r && r.status === 400 && payload === withThink){
+        const msg = await r.clone().json().then(j => (j.error && j.error.message) || "").catch(() => "");
+        if(/think/i.test(msg)){ NOTHINK_KO.add(model); payload = plain; continue; }
+      }
+      break;
+    }
+    if(!r) continue;
     if(!r.ok){
       let msg = ""; try { msg = (await r.json()).error.message || ""; } catch(e){}
       if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
