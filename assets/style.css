@@ -559,3 +559,6 @@ tr.editing td{background:rgba(255,138,31,.07)}
 @media (max-width:600px){.coach-stats .stat b{font-size:19px}}
 #coach .seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px;border-radius:16px}
 #coach .seg button{padding:9px 4px;border-radius:12px}
+.diag{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px;font-size:13.5px;color:var(--muted);overflow-wrap:anywhere}
+.diag li[data-ok="1"]{color:#8fe0ad}
+.diag li[data-ok="0"]{color:#ffb1a8}

@@ -363,11 +363,12 @@ async function gemini(o, retried){
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
   let r;
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 90000);
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 90000), t0 = Date.now();
   try{
     r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
-  }catch(e){ throw new Error(e.name === "AbortError" ? "Gemini met trop de temps à répondre. Réessaie." : "Gemini injoignable. Vérifie ta connexion."); }
+  }catch(e){ const sec = Math.round((Date.now() - t0) / 1000);
+    throw new Error(e.name === "AbortError" ? `Gemini (${model}) met trop de temps à répondre. Réessaie.` : `Gemini injoignable (${model}, ${sec} s : ${e.message || e.name}).`); }
   finally{ clearTimeout(timer); }
   if(r.status === 404 && !retried){ /* modèle retiré par Google : on prend le Flash stable le plus récent */
     const m = await pickModel(key);
