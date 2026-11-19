@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-19T13:32:37.162Z",
+ "updatedAt": "2026-11-19T14:34:26.147Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2264,7 +2264,21 @@
    ]
   }
  },
- "meals": {},
+ "meals": {
+  "2026-11-19": [
+   {
+    "id": "mmwnnilszvqk1",
+    "n": "Chocolat noir 70 %",
+    "g": 100,
+    "k": 580,
+    "p": 8,
+    "c": 33,
+    "l": 43,
+    "m": "din",
+    "src": "base"
+   }
+  ]
+ },
  "customFoods": [],
  "calTargets": {
   "kcalMin": 3000,
