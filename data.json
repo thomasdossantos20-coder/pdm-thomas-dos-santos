@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-19T13:32:28.733Z",
+ "updatedAt": "2026-11-19T13:32:34.924Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2272,7 +2272,12 @@
   "protMin": 130
  },
  "coach": {
-  "notes": {},
+  "notes": {
+   "w:2026-11-16": {
+    "text": "Thomas, ta semaine est mauvaise pour ta prise de masse.\n\nCôté poids, tu as perdu 600g en neuf jours. Tu tombes à 71,9 kg alors que tu visais les 75 kg. C’est un signal d’alarme : tu es en déficit calorique, ce qui est l'opposé de ton objectif.\n\nLe point le plus important à corriger, c'est ta nutrition. Tu n'as rien noté en 7 jours. Sans suivi, tu navigues à vue et tu perds du poids. Si tu ne manges pas tes 3000-3200 kcal et tes 130g de protéines, tes records en salle (Mollets, Abdos, Incliné, Dips) ne serviront à rien car ton corps n'aura pas de matériaux pour construire du muscle.\n\nPriorité semaine prochaine :\n1. Note chaque repas. Aucun oubli.\n2. Fais tes 4 séances. Tu n'en as fait que 2 sur 4, c'est insuffisant pour stimuler la croissance.\n3. Respecte strictement l'alerte kiné sur le Shoulder Press (5 kg max).",
+    "at": "2026-11-19T13:32:34.924Z"
+   }
+  },
   "chat": [
    {
     "r": "u",
