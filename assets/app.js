@@ -194,10 +194,11 @@ const ICONS = {
   weight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M4 7h16"/><path d="M4 7l-3 7a3 3 0 0 0 6 0L4 7ZM20 7l-3 7a3 3 0 0 0 6 0l-3-7Z"/></svg>',
   prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>',
   arch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="3"/><path d="M3 4v5a2 2 0 0 0 2 2M3 4v16M21 4c-1.5 1-2 2.5-2 5v3h2V4ZM21 12v8"/></svg>',
   dojo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5c4 1.2 16 1.2 20 0M4 9h16M7 6.5V21M17 6.5V21M12 9v3"/></svg>'
 };
 const PAGES = [
-  ["index.html","Accueil","home"],["poids.html","Poids","weight"],["programme.html","Programme","prog"],["archives.html","Archives","arch"],["dojo.html","Dojo","dojo"]
+  ["index.html","Accueil","home"],["poids.html","Poids","weight"],["programme.html","Programme","prog"],["calories.html","Calories","cal"],["archives.html","Archives","arch"],["dojo.html","Dojo","dojo"]
 ];
 const BRAND = '<svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB24D"/><stop offset="1" stop-color="#E0610B"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#bm)"/><path d="M20 6 L23.5 16.5 L34 20 L23.5 23.5 L20 34 L16.5 23.5 L6 20 L16.5 16.5 Z" fill="#1d1000"/><circle cx="20" cy="20" r="3" fill="#FFB24D"/></svg>';
 function renderShell(){
