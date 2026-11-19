@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preload" href="assets/fonts/dela-gothic-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/zen-kaku-gothic-new-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=19">
+<link rel="stylesheet" href="assets/style.css?v=20">
 </head>
 <body>
 <main>
@@ -57,7 +57,9 @@
       <label class="f" data-wide>Clé Gemini<input name="key" type="password" autocomplete="off" placeholder="AIza…"></label>
       <label class="f">Modèle (laisser vide)<input name="model" autocomplete="off"></label>
       <button class="btn" type="submit">Enregistrer et tester</button>
+      <button class="btn ghost" type="button" id="upd">Vérifier les mises à jour</button>
     </form>
+    <p id="upd-msg" class="muted" role="status" style="margin:10px 0 0">Version installée : v<span id="upd-cur"></span></p>
     <p id="ai-msg" class="muted" role="status" style="margin:10px 0 0"></p>
     <button class="btn ghost sm" type="button" id="ai-diag" style="margin-top:10px">Diagnostic des modèles</button>
     <ul id="ai-diag-out" class="diag"></ul>
@@ -88,8 +90,8 @@
     </div>
   </section>
 </main>
-<script src="assets/app.js?v=19"></script>
-<script src="assets/fx.js?v=19"></script>
+<script src="assets/app.js?v=20"></script>
+<script src="assets/fx.js?v=20"></script>
 <script>
 (async function(){
   const P = window.PDM, { $, esc, num } = P;
@@ -134,6 +136,22 @@
     catch(err){ aiMsg.textContent = err.message; }
   };
 
+
+  /* mises à jour : compare avec version.json en ligne, vide les caches, recharge */
+  $("#upd-cur").textContent = P.version;
+  $("#upd").onclick = async () => {
+    const m = $("#upd-msg"); m.textContent = "Vérification…";
+    try{
+      const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+      const j = await r.json();
+      const txt = "Installée : v" + P.version + " · Dernière : v" + j.v + " (" + j.date + ")";
+      if(j.v === P.version){ m.textContent = txt + " — tu es à jour."; return; }
+      m.textContent = txt + " — mise à jour…";
+      if(window.caches){ for(const k of await caches.keys()) await caches.delete(k); }
+      if(navigator.serviceWorker){ for(const g of await navigator.serviceWorker.getRegistrations()) await g.unregister(); }
+      setTimeout(() => location.replace(location.pathname + "?maj=" + Date.now()), 600);
+    }catch(e){ m.textContent = "Impossible de vérifier (connexion ?)."; }
+  };
 
   /* diagnostic : chaque modèle candidat, avec le temps de réponse, en direct */
   $("#ai-diag").onclick = async () => {

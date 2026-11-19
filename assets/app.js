@@ -438,7 +438,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad, version: 20 };
 
 renderShell();
 })();
