@@ -472,8 +472,12 @@ tr.editing td{background:rgba(255,138,31,.07)}
 .cal-photo{margin-top:14px;display:grid;gap:10px}
 .cal-photo img{width:100%;max-height:260px;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--glass-line)}
 .cal-items{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.cal-items li{display:grid;grid-template-columns:1fr 74px auto 56px auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--glass-line)}
-.cal-photo .cal-items li{grid-template-columns:1fr 74px auto 56px}
+.cal-items li{display:grid;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--glass-line)}
+.cal-items li.ph{grid-template-columns:1fr 74px auto 56px}
+.cal-items li.row{grid-template-columns:1fr 56px auto}
+.cal-name small{display:block;font-size:12.5px;font-weight:500;margin-top:2px}
+.cal-acts{display:flex;gap:2px}
+.cal-edit{display:block !important;background:rgba(255,138,31,.05);border-radius:12px;padding:12px !important;border:1px solid rgba(255,138,31,.3) !important}
 .cal-items li.off{opacity:.45}
 .cal-items li b{text-align:right;font-variant-numeric:tabular-nums}
 .cal-items .cal-g{padding:7px 8px;text-align:right}
@@ -500,5 +504,58 @@ tr.editing td{background:rgba(255,138,31,.07)}
 .cal-col i.ok{background:linear-gradient(180deg,#6fd396,var(--leaf-lo))}
 .cal-col em{position:absolute;left:0;right:0;height:2px;background:var(--leaf)}
 @media (max-width:600px){.cal-big b{font-size:38px}.cal-macros .stat{padding:12px}.cal-macros .stat b{font-size:19px}}
-#cal .seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px;border-radius:16px}
-#cal .seg button{padding:9px 4px;border-radius:12px}
+#cal .cal-seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px;border-radius:16px;margin:12px 0 14px}
+#cal .cal-seg button{padding:9px 4px;border-radius:12px}
+.cal-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;border-bottom:1px solid var(--glass-line)}
+.cal-modes button{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);font-weight:700;padding:10px 2px;cursor:pointer;font-size:14px}
+.cal-modes button[aria-selected="true"]{color:var(--flame-hi);border-bottom-color:var(--flame)}
+.cal-2btn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cal-2btn .btn{width:100%}
+.cal-prod{display:flex;gap:12px;align-items:center;margin-top:14px;padding:12px;border-radius:var(--r-md);background:rgba(255,255,255,.04);border:1px solid var(--glass-line)}
+.cal-prod img{width:56px;height:56px;object-fit:contain;border-radius:8px;background:#fff;flex:none}
+.cal-prod b{display:block}
+.cal-prod small{display:block;font-size:13px;margin-top:3px}
+.scan-ov{position:fixed;inset:0;z-index:80;background:rgba(4,6,15,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+.scan-box{position:relative;width:min(92vw,520px);aspect-ratio:4/3;border-radius:18px;overflow:hidden;border:2px solid var(--flame)}
+.scan-box video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-line{position:absolute;left:8%;right:8%;top:50%;height:2px;background:var(--loss);box-shadow:0 0 12px var(--loss)}
+.scan-ov p{color:var(--text);margin:0}
+@media (max-width:420px){.cal-modes button{font-size:12.5px}}
+.dojo-link{display:flex;justify-content:space-between;align-items:center;gap:12px;text-decoration:none;color:var(--text);margin-bottom:22px}
+.dojo-link b{display:block;font-family:var(--display);font-weight:400;font-size:18px}
+.dojo-link > span:last-child{font-size:26px;color:var(--flame)}
+.dojo-link:hover{border-color:var(--flame)}
+
+/* ---------- Coach ---------- */
+.coach-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.coach-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:360px;margin-bottom:12px}
+.coach-nav .icon-btn{font-size:22px;padding:4px 14px}
+.coach-nav .icon-btn:disabled{opacity:.25;cursor:default}
+.coach-stats{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-bottom:14px}
+.coach-stats .stat b{font-size:22px}
+.coach-stats .stat.ok b{color:var(--leaf)}
+.coach-rows{list-style:none;margin:0 0 14px;padding:0}
+.coach-rows li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--glass-line)}
+.coach-rows li small{display:block;font-size:12.5px;font-weight:500;margin-top:2px}
+.coach-v{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font-size:12px;font-weight:900;padding:3px 9px;border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.07);color:var(--muted)}
+.tag.pr{background:linear-gradient(180deg,var(--flame-hi),var(--flame));color:#1d1000}
+.tag.up{background:rgba(77,186,116,.18);color:#8fe0ad}
+.tag.down{background:rgba(255,107,94,.16);color:#ffb1a8}
+.coach-note{position:relative;background:rgba(255,138,31,.06);border:1px solid rgba(255,138,31,.28);border-radius:var(--r-md);padding:14px 16px 10px;line-height:1.55}
+.coach-note p{margin:0 0 8px}.coach-note ul{margin:0 0 8px;padding-left:20px}
+.coach-note .icon-btn{font-size:13px;padding:4px 0}
+.coach-note.busy{color:var(--muted)}
+.chat-log{display:flex;flex-direction:column;gap:10px;max-height:min(60svh,560px);overflow-y:auto;padding:14px 2px;margin-top:6px}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;overflow-wrap:anywhere}
+.msg.u{align-self:flex-end;background:linear-gradient(180deg,var(--flame-hi),var(--flame));color:#1d1000;font-weight:700;border-bottom-right-radius:4px;white-space:pre-wrap}
+.msg.m{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--glass-line);border-bottom-left-radius:4px}
+.msg.m p{margin:0 0 6px}.msg.m p:last-child{margin:0}.msg.m ul{margin:4px 0;padding-left:18px}
+.msg.busy{color:var(--muted);letter-spacing:.2em}
+.chat-sugg{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
+.chat-sugg .chip{cursor:pointer;white-space:nowrap;border:1px solid var(--glass-line)}
+.chat-form{display:flex;gap:8px;align-items:flex-end}
+.chat-form textarea{min-height:46px;max-height:140px}
+@media (max-width:600px){.coach-stats .stat b{font-size:19px}}
+#coach .seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px;border-radius:16px}
+#coach .seg button{padding:9px 4px;border-radius:12px}

@@ -195,10 +195,11 @@ const ICONS = {
   prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>',
   arch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="3"/><path d="M3 4v5a2 2 0 0 0 2 2M3 4v16M21 4c-1.5 1-2 2.5-2 5v3h2V4ZM21 12v8"/></svg>',
+  coach:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>',
   dojo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5c4 1.2 16 1.2 20 0M4 9h16M7 6.5V21M17 6.5V21M12 9v3"/></svg>'
 };
 const PAGES = [
-  ["index.html","Accueil","home"],["poids.html","Poids","weight"],["programme.html","Programme","prog"],["calories.html","Calories","cal"],["archives.html","Archives","arch"],["dojo.html","Dojo","dojo"]
+  ["index.html","Accueil","home"],["poids.html","Poids","weight"],["programme.html","Programme","prog"],["calories.html","Calories","cal"],["coach.html","Coach","coach"],["dojo.html","Dojo","dojo"]
 ];
 const BRAND = '<svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB24D"/><stop offset="1" stop-color="#E0610B"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#bm)"/><path d="M20 6 L23.5 16.5 L34 20 L23.5 23.5 L20 34 L16.5 23.5 L6 20 L16.5 16.5 Z" fill="#1d1000"/><circle cx="20" cy="20" r="3" fill="#FFB24D"/></svg>';
 function renderShell(){
@@ -208,7 +209,7 @@ function renderShell(){
   header.innerHTML = `<div class="tape" aria-hidden="true"></div>
     <div class="topbar-in">
       <a class="brand" href="index.html" aria-label="PDM Thomas, accueil">${BRAND}<span><b>PDM</b> <small>Thomas</small></span></a>
-      <nav class="nav" aria-label="Pages">${PAGES.map(([h,l,ic]) => `<a href="${h}"${h===here?' aria-current="page"':""}>${ICONS[ic]}<span>${l}</span></a>`).join("")}</nav>
+      <nav class="nav" aria-label="Pages">${PAGES.map(([h,l,ic]) => `<a href="${h}"${h===here || (here==="archives.html" && h==="dojo.html")?' aria-current="page"':""}>${ICONS[ic]}<span>${l}</span></a>`).join("")}</nav>
       <a class="sync" href="reglages.html" data-s="local"${here==="reglages.html"?' aria-current="page"':""}><i></i><span>Sur cet appareil</span></a>
     </div>`;
   document.body.prepend(header);
@@ -341,11 +342,74 @@ function exCard(ex, gym, defGym){
   </article>`;
 }
 
+/* ---------- Gemini (clé gardée sur l'appareil, jamais dans data.json ni dans le code) ---------- */
+const GKEY = "pdm-gemini-key", GMODEL = "pdm-gemini-model", GDEFAULT = "gemini-2.5-flash";
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } };
+const lsSet = (k,v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} };
+const gemCfg = {
+  get key(){ return lsGet(GKEY); }, set key(v){ lsSet(GKEY, v); },
+  get model(){ return lsGet(GMODEL); }, set model(v){ lsSet(GMODEL, v); },
+  defaultModel: GDEFAULT
+};
+/* gemini({ parts | history, schema?, system?, temperature? }) → objet JSON si schema, sinon texte */
+async function gemini(o, retried){
+  const key = gemCfg.key;
+  if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
+  const model = gemCfg.model || GDEFAULT;
+  const gc = { temperature: o.temperature ?? 0.2 };
+  if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
+  const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
+  if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
+  let r;
+  try{
+    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
+  }catch(e){ throw new Error("Gemini injoignable. Vérifie ta connexion."); }
+  if(r.status === 404 && !retried){ /* modèle retiré par Google : on prend le Flash stable le plus récent */
+    const m = await pickModel(key);
+    if(m && m !== model){ gemCfg.model = m; return gemini(o, true); }
+  }
+  if(!r.ok){
+    let msg = ""; try { msg = (await r.json()).error.message; } catch(e){}
+    if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
+    if(r.status === 429) throw new Error("Quota Gemini atteint. Réessaie dans une minute.");
+    throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg : ""));
+  }
+  const j = await r.json();
+  const c = j.candidates && j.candidates[0];
+  const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
+  if(!txt) throw new Error("Gemini n'a rien renvoyé" + (c && c.finishReason ? " (" + c.finishReason + ")" : "") + ".");
+  return o.schema ? JSON.parse(txt) : txt;
+}
+async function pickModel(key){
+  try{
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+    if(!r.ok) return null;
+    const ms = (await r.json()).models.filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => m.name.replace("models/","")).filter(n => /flash/.test(n) && !/lite|image|tts|live|preview|exp|audio/.test(n));
+    ms.sort((a,b) => b.localeCompare(a, "en", { numeric: true }));
+    return ms[0] || null;
+  }catch(e){ return null; }
+}
+/* mini-markdown sûr pour les réponses du coach */
+function md(t){
+  const lines = esc(t).split(/\n/); let out = "", list = false;
+  for(const raw of lines){
+    const l = raw.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<i>$2</i>");
+    const li = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/);
+    if(li){ if(!list){ out += "<ul>"; list = true; } out += `<li>${li[1]}</li>`; continue; }
+    if(list){ out += "</ul>"; list = false; }
+    const h = l.match(/^#{1,4}\s+(.*)/);
+    out += h ? `<p><b>${h[1]}</b></p>` : l.trim() ? `<p>${l}</p>` : "";
+  }
+  return out + (list ? "</ul>" : "");
+}
+
 /* ---------- export ---------- */
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad };
 
 renderShell();
 })();
