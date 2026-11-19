@@ -343,9 +343,11 @@ function exCard(ex, gym, defGym){
 }
 
 /* ---------- Gemini (clé gardée sur l'appareil, jamais dans data.json ni dans le code) ---------- */
-const GKEY = "pdm-gemini-key", GMODEL = "pdm-gemini-model", GDEFAULT = "gemini-2.5-flash";
+/* gemini-flash-latest : alias tenu à jour par Google (gemini-2.5-flash est fermé aux nouveaux comptes) */
+const GKEY = "pdm-gemini-key", GMODEL = "pdm-gemini-model", GDEFAULT = "gemini-flash-latest";
 const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } };
 const lsSet = (k,v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} };
+if(/omni|^gemini-2\.5-flash$/.test(lsGet(GMODEL))) lsSet(GMODEL, ""); /* mauvais choix automatique de la version précédente */
 const gemCfg = {
   get key(){ return lsGet(GKEY); }, set key(v){ lsSet(GKEY, v); },
   get model(){ return lsGet(GMODEL); }, set model(v){ lsSet(GMODEL, v); },
@@ -361,10 +363,12 @@ async function gemini(o, retried){
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
   let r;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 90000);
   try{
     r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
-  }catch(e){ throw new Error("Gemini injoignable. Vérifie ta connexion."); }
+      method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) });
+  }catch(e){ throw new Error(e.name === "AbortError" ? "Gemini met trop de temps à répondre. Réessaie." : "Gemini injoignable. Vérifie ta connexion."); }
+  finally{ clearTimeout(timer); }
   if(r.status === 404 && !retried){ /* modèle retiré par Google : on prend le Flash stable le plus récent */
     const m = await pickModel(key);
     if(m && m !== model){ gemCfg.model = m; return gemini(o, true); }
@@ -372,7 +376,7 @@ async function gemini(o, retried){
   if(!r.ok){
     let msg = ""; try { msg = (await r.json()).error.message; } catch(e){}
     if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
-    if(r.status === 429) throw new Error("Quota Gemini atteint. Réessaie dans une minute.");
+    if(r.status === 429) throw new Error(`Quota Gemini atteint sur ${model}. Réessaie dans une minute.`);
     throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg : ""));
   }
   const j = await r.json();
@@ -385,10 +389,12 @@ async function pickModel(key){
   try{
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
     if(!r.ok) return null;
-    const ms = (await r.json()).models.filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
-      .map(m => m.name.replace("models/","")).filter(n => /flash/.test(n) && !/lite|image|tts|live|preview|exp|audio/.test(n));
-    ms.sort((a,b) => b.localeCompare(a, "en", { numeric: true }));
-    return ms[0] || null;
+    const ms = (await r.json()).models.filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => m.name.replace("models/",""));
+    if(ms.includes("gemini-flash-latest")) return "gemini-flash-latest";
+    /* sinon : le « gemini-X.Y-flash » stable au numéro le plus haut (pas omni, preview, lite…) */
+    const v = n => { const m = n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/); return m ? parseFloat(m[1]) : -1; };
+    const best = ms.filter(n => v(n) >= 0).sort((a,b) => v(b) - v(a))[0];
+    return best || null;
   }catch(e){ return null; }
 }
 /* mini-markdown sûr pour les réponses du coach */
