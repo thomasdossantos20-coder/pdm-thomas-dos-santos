@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-20T17:19:44.404Z",
+ "updatedAt": "2026-11-20T18:02:25.212Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -939,6 +939,11 @@
          "v": 22,
          "gym": "Courbevoie",
          "date": "2026-10-30"
+        },
+        {
+         "v": 24,
+         "gym": "Courbevoie",
+         "date": "2026-11-20"
         }
        ],
        "note": "Prendre 24 mais s'échauffer à 10 avant"
