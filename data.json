@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-21T19:45:02.123Z",
+ "updatedAt": "2026-11-21T19:45:11.162Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2287,6 +2287,17 @@
     "at": "2026-11-21T19:45:02.123Z"
    }
   },
-  "chat": []
+  "chat": [
+   {
+    "r": "u",
+    "t": "Comment bien s’échauffe ?",
+    "at": "2026-11-21T19:45:09.287Z"
+   },
+   {
+    "r": "m",
+    "t": "Pour t'échauffer correctement, tu dois préparer tes articulations et monter progressivement en charge sur tes exercices.\n\nCommence par 5 minutes de mobilité articulaire légère (cercles de bras, poignets, hanches). Ensuite, pour chaque premier exercice d'un groupe musculaire, fais des séries de montée en charge. Si tu dois faire du développé couché à 30 kg, fais 10 reps à vide, puis 6-8 reps à 15 kg, puis 3-4 reps à 22 kg avant tes séries de travail.\n\nRespecte scrupuleusement tes notes :\n- Pour les **Dips (Séance B)** : échauffe-toi très bien avant les 110 kg.\n- Pour les **Obliques (Séance C)** : fais une série à 10 kg avant de passer aux 24 kg.\n- Pour le **Leg Curl (Séance D)** : l'échauffement est crucial pour éviter les crampes avant d'attaquer les 45 kg.\n- **ALERTE KINÉ** : Sur le Shoulder Press, reste à 5 kg. L'échauffement ne justifie pas de monter la charge.",
+    "at": "2026-11-21T19:45:11.162Z"
+   }
+  ]
  }
 }
