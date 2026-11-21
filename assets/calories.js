@@ -215,46 +215,64 @@ async function decodePhoto(file){
 }
 
 /* ---------- Open Food Facts (la base utilisée par Yuka) ---------- */
-const OFF_FIELDS = "product_name,product_name_fr,generic_name_fr,brands,quantity,product_quantity,product_quantity_unit,serving_size,serving_quantity,nutriments,nutriscore_grade,nova_group,nutrient_levels,additives_tags,image_front_small_url,image_front_url,categories_tags";
-const OFF_CACHE = "pdm-off";
-const offGet = code => { try { return (JSON.parse(localStorage.getItem(OFF_CACHE) || "{}"))[code] || null; } catch(e){ return null; } };
-const offPut = pr => { try { const c = JSON.parse(localStorage.getItem(OFF_CACHE) || "{}"); c[pr.code] = { ...pr, at: Date.now() };
-  const keys = Object.keys(c).sort((a,b) => c[b].at - c[a].at); keys.slice(80).forEach(k => delete c[k]); localStorage.setItem(OFF_CACHE, JSON.stringify(c)); } catch(e){} };
+const OFF_FIELDS = "product_name,product_name_fr,generic_name_fr,brands,quantity,product_quantity,product_quantity_unit,serving_size,serving_quantity,nutriments,nutriscore_grade,nutriscore_score,nutriscore_data,nova_group,additives_tags,image_front_small_url,image_front_url,categories_tags,categories_hierarchy,labels_tags,ingredients_text_fr,ingredients_text,allergens_tags,environmental_score_grade,environmental_score_score,environmental_score_data,ecoscore_grade,ecoscore_score,ecoscore_data";
+const OFF_CACHE = "pdm-off2";
+const lsJSON = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch(e){ return d; } };
+const offGet = code => { const c = lsJSON(OFF_CACHE, {})[code]; return c && c.v === 3 ? c : null; };
+const offPut = pr => { try { const c = lsJSON(OFF_CACHE, {}); c[pr.code] = { ...pr, at: Date.now() };
+  Object.keys(c).sort((a,b) => c[b].at - c[a].at).slice(60).forEach(k => delete c[k]); localStorage.setItem(OFF_CACHE, JSON.stringify(c)); } catch(e){} };
 
 function offProduct(code, pr){
   const nu = pr.nutriments || {}, v = k => { const x = nu[k + "_100g"]; return x == null || x === "" || isNaN(+x) ? null : +x; };
   let k = v("energy-kcal"); if(k == null && v("energy") != null) k = v("energy") / 4.184;
   const unitTxt = String(pr.product_quantity_unit || pr.quantity || "").toLowerCase();
-  const drink = /\b(ml|cl|l)\b|litre/.test(unitTxt) || (pr.categories_tags || []).some(c => /beverages|boissons|waters|eaux/.test(c));
+  const cats = pr.categories_tags || pr.categories_hierarchy || [];
+  const drink = (pr.nutriscore_data && pr.nutriscore_data.is_beverage === 1) || /\b(ml|cl|l)\b|litre/.test(unitTxt) || cats.some(c => /beverages|boissons|waters|eaux/.test(c));
   const name = pr.product_name_fr || pr.product_name || pr.generic_name_fr || "Produit " + code;
   const brand = pr.brands ? pr.brands.split(",")[0].trim() : "";
   const grade = /^[a-e]$/.test(pr.nutriscore_grade || "") ? pr.nutriscore_grade : null;
-  return { code, name, brand, n: brand && !norm(name).includes(norm(brand)) ? `${name} · ${brand}` : name, img: pr.image_front_url || pr.image_front_small_url || "",
+  const ed = pr.environmental_score_data || pr.ecoscore_data || {}, adj = ed.adjustments || {};
+  const og = adj.origins_of_ingredients || {}, pk = adj.packaging || {}, ts = adj.threatened_species || {};
+  const out = { v: 3, code, name, brand, n: brand && !norm(name).includes(norm(brand)) ? `${name} · ${brand}` : name,
+    img: pr.image_front_url || pr.image_front_small_url || "", thumb: pr.image_front_small_url || pr.image_front_url || "",
     qty: pr.quantity || "", pq: +pr.product_quantity || null, serving: +pr.serving_quantity || null, servingTxt: pr.serving_size || "",
-    drink, unit: drink ? "ml" : "g", grade, nova: +pr.nova_group || null, lv: pr.nutrient_levels || {},
-    add: (pr.additives_tags || []).map(a => a.replace(/^en:/, "").toUpperCase()),
+    drink: !!drink, unit: drink ? "ml" : "g", grade, ns: pr.nutriscore_score == null ? null : +pr.nutriscore_score, nova: +pr.nova_group || null,
+    add: Array.isArray(pr.additives_tags) ? pr.additives_tags.map(a => a.replace(/^en:/, "").toUpperCase()) : null,
+    labels: pr.labels_tags || [], cats: pr.categories_hierarchy || pr.categories_tags || [],
+    ingr: pr.ingredients_text_fr || pr.ingredients_text || "", allergens: pr.allergens_tags || [],
     hasNutri: k != null, k: r1(k || 0), p: r1(v("proteins") || 0), c: r1(v("carbohydrates") || 0), l: r1(v("fat") || 0),
-    sug: v("sugars"), sat: v("saturated-fat"), salt: v("salt"), fib: v("fiber"), src: "off" };
+    sug: v("sugars"), sat: v("saturated-fat"), salt: v("salt"), fib: v("fiber"),
+    fvl: v("fruits-vegetables-legumes-estimate-from-ingredients") ?? v("fruits-vegetables-nuts-estimate-from-ingredients"),
+    env: {
+      grade: pr.environmental_score_grade || pr.ecoscore_grade || "",
+      agri: ed.agribalyse && ed.agribalyse.score != null ? +ed.agribalyse.score : null,
+      pack: { score: pk.score == null ? null : +pk.score, warn: pk.warning || "", mats: (pk.packagings || []).map(x => [x.shape || "", x.material || ""]) },
+      orig: (og.aggregated_origins || []).filter(o => o.origin && o.origin !== "en:unknown").map(o => [o.origin, +o.percent || 0]),
+      origScore: og.transportation_scores && og.transportation_scores.fr != null ? +og.transportation_scores.fr : null,
+      origVal: og.value == null ? null : +og.value,
+      threat: ts.ingredient || "",
+      labels: (adj.production_system && adj.production_system.labels) || []
+    },
+    src: "off" };
+  out.score = pdmScore(out);
+  return out;
 }
 async function lookup(code){
   code = String(code).replace(/\D/g, "");
   if(code.length < 8){ toast("Code trop court"); return; }
   const known = D.customFoods.find(f => f.code === code);
   const lastQty = known && known.serving;
+  const persoP = () => ({ v: 3, code, n: known.n, name: known.n, brand: "", k: known.k, p: known.p, c: known.c, l: known.l, hasNutri: true, unit: "g", add: null, labels: [], cats: [], env: {}, src: "perso" });
   const cached = offGet(code);
-  if(cached){ showProduct(cached, lastQty); refreshOff(code, lastQty); return; }
+  if(cached){ showProduct(cached, lastQty); refreshOff(code); return; }
   state.scan = { code, busy: "off" }; renderAdd();
   try{
     const pr = await fetchOff(code);
-    if(!pr){
-      state.scan = known ? null : { code, err: `Produit ${code} absent d'Open Food Facts.` };
-      if(known) showProduct({ code, n: known.n, name: known.n, brand: "", k: known.k, p: known.p, c: known.c, l: known.l, hasNutri: true, unit: "g", lv: {}, add: [], src: "perso" }, lastQty);
-      else renderAdd();
-      return;
-    }
-    offPut(pr); showProduct(pr, lastQty);
+    if(pr){ offPut(pr); showProduct(pr, lastQty); }
+    else if(known) showProduct(persoP(), lastQty);
+    else { state.scan = { code, err: `Produit ${code} absent d'Open Food Facts.` }; renderAdd(); }
   }catch(err){
-    if(known) showProduct({ code, n: known.n, name: known.n, brand: "", k: known.k, p: known.p, c: known.c, l: known.l, hasNutri: true, unit: "g", lv: {}, add: [], src: "perso" }, lastQty);
+    if(known) showProduct(persoP(), lastQty);
     else { state.scan = { code, err: "Open Food Facts ne répond pas. Vérifie ta connexion et réessaie." }; renderAdd(); }
   }
 }
@@ -267,14 +285,13 @@ async function fetchOff(code){
     return j && j.status === 1 && j.product ? offProduct(code, j.product) : null;
   } finally { clearTimeout(to); }
 }
-async function refreshOff(code, lastQty){ /* le cache s'affiche tout de suite, la fiche se met à jour en fond */
-  try{ const pr = await fetchOff(code); if(pr){ offPut(pr); if(state.scan && state.scan.product && state.scan.product.code === code && !state.scan.touched){ showProduct(pr, lastQty); } } }catch(e){}
+async function refreshOff(code){ /* le cache s'affiche tout de suite, la fiche se met à jour en fond */
+  try{ const pr = await fetchOff(code); if(pr){ offPut(pr); const s = state.scan; if(s && s.product && s.product.code === code && !s.touched){ s.product = pr; rerenderSheet(); } } }catch(e){}
 }
 function showProduct(pr, lastQty){
   const g = lastQty || pr.serving || (pr.pq && pr.pq <= 100 ? pr.pq : 100);
   state.scan = { code: pr.code, product: pr, g: rq(g) };
-  renderAdd();
-  const card = $(".yk"); if(card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  renderAdd(); openSheet();
 }
 
 /* ---------- rendu ---------- */
@@ -346,16 +363,18 @@ function renderAdd(){
   }
   if(state.mode === "scan"){
     const s = state.scan;
-    h = s && s.product ? productCard(s) : `
+    const favs = D.customFoods.filter(f => f.fav && f.code);
+    h = s && s.product ? miniCard(s.product) : `
       <button class="btn big scan-cta" type="button" data-act="cam"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M2 5h2v14H2zm3 0h1v14H5zm2 0h3v14H7zm4 0h1v14h-1zm3 0h2v14h-2zm3 0h1v14h-1zm2 0h3v14h-3z"/></svg>Scanner un code-barres</button>
       <form id="bc" class="form-row" style="margin-top:12px" autocomplete="off">
         <label class="f" data-wide>Ou tape les chiffres<input name="code" inputmode="numeric" placeholder="3017620422003" value="${esc(s && s.code ? s.code : "")}"></label>
         <button class="btn ghost" type="submit">Chercher</button>
       </form>
       <label class="btn ghost sm" style="margin-top:10px">Lire le code sur une photo<input type="file" id="bc-photo" accept="image/*" hidden></label>
+      ${favs.length ? `<div class="cal-favs"><h3>Favoris</h3><div class="chips">${favs.map(f => `<button type="button" class="chip" data-fav="${esc(f.code)}">★ ${esc(f.n)}</button>`).join("")}</div></div>` : ""}
       ${!s ? `<p class="muted cal-hint">Produits du commerce via Open Food Facts, la base utilisée par Yuka. Gratuit, sans clé.</p>` :
         s.busy === "photo" ? `<p class="muted cal-hint">Lecture du code sur la photo…</p>` :
-        s.busy === "off" ? `<div class="yk yk-skel" aria-busy="true"><div class="yk-h"><div class="yk-noimg"></div><div class="yk-id"><h3>Recherche du produit…</h3><p>${esc(s.code)}</p></div></div></div>` :
+        s.busy === "off" ? `<div class="cal-mini skel" aria-busy="true"><span class="yk-nopic"></span><div><b>Recherche du produit…</b><small>${esc(s.code)}</small></div></div>` :
         s.err ? `<div class="alert" style="margin-top:12px">${esc(s.err)}</div>${s.code ? `<button class="btn ghost sm" style="margin-top:10px" data-act="scan-free">Le saisir à la main</button>` : ""}` : ""}`;
   }
   if(state.mode === "search"){
@@ -384,66 +403,183 @@ function renderAdd(){
   bindAdd();
 }
 
-/* ---------- fiche produit façon Yuka ---------- */
-const NS = { a: ["Excellent", "#038141"], b: ["Bon", "#85BB2F"], c: ["Moyen", "#E5B700"], d: ["Médiocre", "#EE8100"], e: ["Mauvais", "#E63E11"] };
-const NOVA = { 1: "Non transformé", 2: "Ingrédient culinaire", 3: "Transformé", 4: "Ultra-transformé" };
-/* seuils pour 100 g (solides) puis 100 ml (boissons), utilisés si Open Food Facts ne donne pas le niveau */
-const LIM = { sugars: [5, 22.5, 2.5, 11.25], "saturated-fat": [1.5, 5, 0.75, 2.5], salt: [0.3, 1.5, 0.3, 0.75] };
-const LTXT = {
-  sugars: ["Sucres", "Sans sucre", "Peu sucré", "Moyennement sucré", "Trop sucré"],
-  "saturated-fat": ["Graisses saturées", "Sans graisses saturées", "Peu de graisses saturées", "Graisses saturées modérées", "Trop de graisses saturées"],
-  salt: ["Sel", "Sans sel", "Peu salé", "Moyennement salé", "Trop salé"] };
-const gTxt = x => (x < 1 && x > 0 ? (Math.round(x * 100) / 100).toLocaleString("fr-FR") : x < 10 ? dec(x) : fmt(x)) + " g";
-function level(pr, key, val){
-  if(pr.lv && /^(low|moderate|high)$/.test(pr.lv[key])) return pr.lv[key];
-  const t = LIM[key], lo = pr.drink ? t[2] : t[0], hi = pr.drink ? t[3] : t[1];
-  return val <= lo ? "low" : val > hi ? "high" : "moderate";
+/* ---------- fiche produit façon Yuka (feuille plein écran) ---------- */
+const TONE = { g1: "#1e8f4e", g2: "#85bb2f", y: "#f2c200", o: "#ee8100", r: "#e63e11", n: "#b8b8bd" };
+const IC = {
+  add: '<path d="M9 4.5 4.5 7v5L9 14.5 13.5 12V7z"/><path d="M13.5 7 17 5l3 1.5M9 9.5v2.5"/>',
+  kcal: '<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.4 1.2-3.9 2.3-5 .2 1.6.9 2.6 1.9 3.1C11 8.5 11 5.5 12 3z"/>',
+  sug: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+  sat: '<path d="M12 3.5c3 4 6 7.3 6 10.5a6 6 0 0 1-12 0c0-3.2 3-6.5 6-10.5z"/><path d="M9 14.5a3 3 0 0 0 3 3"/>',
+  salt: '<path d="M8 8h8l1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/><path d="M9 8V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V8"/><circle cx="10.5" cy="14" r=".6"/><circle cx="13.5" cy="13" r=".6"/><circle cx="12" cy="16.5" r=".6"/>',
+  prot: '<path d="M7 17c-2.5-2.5-2.5-6.5 0-9s7.5-3.5 10-1 1.5 7.5-1 10-6.5 2.5-9 0z"/><path d="M7 17l-3 3M10 12h4"/>',
+  fib: '<path d="M12 21V9M12 13c-3 0-4.5-2-4.5-4 2.5 0 4.5 1.5 4.5 4zm0 0c3 0 4.5-2 4.5-4-2.5 0-4.5 1.5-4.5 4zm0-4c-2 0-3-1.6-3-3.5 1.8 0 3 1.4 3 3.5zm0 0c2 0 3-1.6 3-3.5-1.8 0-3 1.4-3 3.5z"/>',
+  fvl: '<path d="M12 8c-3-2-7-.5-7 4 0 4 3 8 5 8 1 0 1.3-.5 2-.5s1 .5 2 .5c2 0 5-4 5-8 0-4.5-4-6-7-4z"/><path d="M12 8c0-2 1-3.5 3-4"/>',
+  prod: '<path d="M4 19h16M6 19c0-3.3 2.7-6 6-6s6 2.7 6 6M9 19c0-1.7 1.3-3 3-3s3 1.3 3 3"/><path d="M12 4v2M5.6 6.6 7 8M18.4 6.6 17 8M3 11h2M19 11h2"/>',
+  lab: '<path d="M12 3l2.2 1.6 2.7-.1.8 2.6 2.2 1.6-.9 2.6.9 2.6-2.2 1.6-.8 2.6-2.7-.1L12 21l-2.2-1.6-2.7.1-.8-2.6-2.2-1.6.9-2.6-.9-2.6 2.2-1.6.8-2.6 2.7.1z"/><path d="m9 12 2 2 4-4"/>',
+  pack: '<path d="M7 7.5 9.5 3.5 12 7.5M17 13.5l2.5 4H14.5M7 17.5H4.5L7 13.5"/><path d="M9.5 3.5 12 7.5M14.5 17.5h5M4.5 17.5l2.5-4"/>',
+  orig: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  threat: '<path d="M12 21v-6M7 15h10l-3.5-4H16l-4-6-4 6h2.5z"/>',
+  nova: '<path d="M5 8h14v11H5zM8 8V5h8v3"/><path d="M9 13h6"/>'
+};
+const icon = k => `<svg class="yk-ic" viewBox="0 0 24 24" aria-hidden="true">${IC[k] || ""}</svg>`;
+/* seuils par 100 g (s) et 100 ml (d) : vert foncé ≤ t0 < vert clair ≤ t1 < orange ≤ t2 < rouge */
+const SCALE = {
+  kcal: { s: [160, 360, 560], d: [1, 14, 35], u: " kcal", name: "Énergie", txt: ["Peu calorique", "Calories raisonnables", "Un peu trop calorique", "Trop calorique"], zero: "Sans calories" },
+  sug: { s: [4.5, 9, 18], d: [0, 1.5, 5], u: " g", name: "Sucres", txt: ["Peu sucré", "Faible quantité de sucre", "Un peu trop sucré", "Trop sucré"], zero: "Sans sucre" },
+  sat: { s: [1, 2, 4], d: [1, 2, 4], u: " g", name: "Graisses saturées", txt: ["Peu de graisses saturées", "Faible quantité de graisses saturées", "Un peu trop de graisses saturées", "Trop de graisses saturées"], zero: "Sans graisses saturées" },
+  salt: { s: [0.46, 0.92, 1.62], d: [0.46, 0.92, 1.62], u: " g", name: "Sel", txt: ["Peu de sel", "Faible quantité de sel", "Un peu trop salé", "Trop salé"], zero: "Sans sel" } };
+const POS = {
+  prot: { th: [4.8, 8], u: " g", name: "Protéines", txt: ["Peu de protéines", "Quelques protéines", "Excellente quantité de protéines"] },
+  fib: { th: [3, 4.7], u: " g", name: "Fibres", txt: ["Peu de fibres", "Quelques fibres", "Excellente quantité de fibres"] },
+  fvl: { th: [40, 80], u: " %", name: "Fruits et légumes", txt: ["Peu de fruits et légumes", "Quelques fruits et légumes", "Excellente quantité de fruits et légumes"] } };
+const nf = x => x == null ? "" : x === 0 ? "0" : x < 1 ? (Math.round(x * 100) / 100).toLocaleString("fr-FR") : x < 10 ? dec(x) : fmt(x);
+const ADD_RISK = { h: ["r", "Risque élevé de surexposition (EFSA)"], m: ["o", "Risque modéré de surexposition (EFSA)"], n: ["g1", "Pas de risque de surexposition (EFSA)"], "": ["n", "Pas d'alerte EFSA connue"] };
+const addInfo = c => { const A = (window.PDM_OFFDATA || {}).add || {}; return A[c] || A[c.replace(/[A-Z]+$/, "")] || ["", "", ""]; };
+const ENVG = { "a-plus": ["A+", "Impact très faible", "#00803d"], a: ["A", "Très faible impact", "#1e8f4e"], b: ["B", "Faible impact", "#60ac0e"], c: ["C", "Impact modéré", "#d9a400"], d: ["D", "Impact élevé", "#ee8100"], e: ["E", "Impact très élevé", "#e63e11"], f: ["F", "Impact très élevé", "#b0170c"] };
+const ENV_LABELS = { "en:organic": "Agriculture biologique", "en:eu-organic": "Agriculture biologique (UE)", "en:ab-agriculture-biologique": "AB Agriculture biologique", "en:rainforest-alliance": "Rainforest Alliance", "en:fair-trade": "Commerce équitable", "en:fairtrade-international": "Fairtrade / Max Havelaar", "en:max-havelaar": "Max Havelaar", "en:msc-sustainable-fishery": "Pêche durable MSC", "en:asc-aquaculture-stewardship-council": "Aquaculture responsable ASC", "en:label-rouge": "Label Rouge", "en:bleu-blanc-coeur": "Bleu-Blanc-Cœur", "en:utz-certified": "UTZ", "en:demeter": "Demeter", "en:nature-et-progres": "Nature & Progrès", "en:haute-valeur-environnementale": "Haute Valeur Environnementale" };
+const ENV_LABEL_SUB = { "en:rainforest-alliance": "Lutte contre la déforestation", "en:msc-sustainable-fishery": "Ressources halieutiques préservées" };
+const MAT = { glass: "verre", plastic: "plastique", "pet-1-polyethylene-terephthalate": "plastique PET", "hdpe-2-high-density-polyethylene": "plastique PEHD", "pp-5-polypropylene": "plastique PP", "ldpe-4-low-density-polyethylene": "plastique PEBD", "ps-6-polystyrene": "polystyrène", aluminium: "aluminium", steel: "acier", metal: "métal", "paper-or-cardboard": "papier ou carton", paper: "papier", cardboard: "carton", "non-corrugated-cardboard": "carton", "corrugated-cardboard": "carton ondulé", "tetra-pak": "brique Tetra Pak", wood: "bois" };
+const SHAPE = { bottle: "bouteille", "bottle-cap": "bouchon", cap: "bouchon", lid: "couvercle", label: "étiquette", box: "boîte", pot: "pot", jar: "bocal", can: "canette", tray: "barquette", bag: "sachet", film: "film", wrapper: "emballage", brick: "brique", sleeve: "manchon", pouch: "doypack" };
+const ALG = { "en:milk": "Lait", "en:gluten": "Gluten", "en:eggs": "Œufs", "en:nuts": "Fruits à coque", "en:peanuts": "Arachides", "en:soybeans": "Soja", "en:fish": "Poisson", "en:crustaceans": "Crustacés", "en:molluscs": "Mollusques", "en:celery": "Céleri", "en:mustard": "Moutarde", "en:sesame-seeds": "Sésame", "en:sulphur-dioxide-and-sulphites": "Sulfites", "en:lupin": "Lupin" };
+const flag = cc => cc && cc.length === 2 ? String.fromCodePoint(...[...cc.toUpperCase()].map(c => 127397 + c.charCodeAt(0))) : "";
+const tag = t => String(t || "").replace(/^[a-z]{2}:/, "");
+
+/* note sur 100, méthode inspirée de Yuka : 60 % nutrition (Nutri-Score), 30 % additifs, 10 % bio */
+function nutriPart(pr){
+  if(!pr.grade) return null;
+  const G = "abcde".indexOf(pr.grade), top = 100 - G * 20;
+  const bands = pr.drink ? [[-15, 1], [0, 2], [3, 6], [7, 9], [10, 20]] : [[-17, 0], [1, 2], [3, 10], [11, 18], [19, 40]];
+  if(pr.ns == null) return top - 10;
+  const [lo, hi] = bands[G], f = Math.min(1, Math.max(0, (pr.ns - lo) / (hi - lo || 1)));
+  return Math.round(top - f * 19);
 }
-function nutriRows(pr){
-  const rows = [];
-  [["sugars", pr.sug], ["saturated-fat", pr.sat], ["salt", pr.salt]].forEach(([key, val]) => {
-    if(val == null) return;
-    const lv = level(pr, key, val), T = LTXT[key];
-    rows.push({ name: T[0], val, label: val === 0 ? T[1] : T[{ low: 2, moderate: 3, high: 4 }[lv]], tone: { low: "g1", moderate: "o", high: "r" }[lv] });
+function pdmScore(pr){
+  const N = nutriPart(pr); if(N == null) return null;
+  const risks = (pr.add || []).map(c => addInfo(c)[1]);
+  const hi = risks.filter(r => r === "h").length, mo = risks.filter(r => r === "m").length, other = risks.length - hi - mo;
+  const A = Math.max(0, 100 - 30 * hi - 15 * mo - 4 * other);
+  const B = (pr.labels || []).some(l => /organic|biologique|ab-agriculture/.test(l)) ? 100 : 0;
+  let s = Math.round(0.6 * N + 0.3 * A + 0.1 * B);
+  if(hi) s = Math.min(s, 49);
+  return Math.max(0, Math.min(100, s));
+}
+const scoreTone = s => s == null ? ["n", "Non noté"] : s >= 75 ? ["g1", "Excellent"] : s >= 50 ? ["g2", "Bon"] : s >= 25 ? ["o", "Médiocre"] : ["r", "Mauvais"];
+
+/* jauge : 4 segments égaux, repère placé dans le bon segment */
+function gauge(th, tones, v, u, max){
+  const edges = [0, ...th, max], n = tones.length;
+  let i = edges.findIndex((e, j) => j > 0 && v <= e) - 1; if(i < 0) i = n - 1;
+  const lo = edges[i], hi = edges[i + 1], pos = Math.min(100, ((i + Math.min(1, Math.max(0, (v - lo) / (hi - lo || 1)))) / n) * 100);
+  return `<div class="yk-gauge"><div class="yk-gbar">${tones.map(t => `<i style="background:${TONE[t]}"></i>`).join("")}</div>
+    <b class="yk-mark" style="left:${pos}%"></b>
+    <div class="yk-gtk">${th.map((t, j) => `<span style="left:${(j + 1) / n * 100}%">${nf(t)}</span>`).join("")}</div>
+    <p class="yk-gu">Valeurs pour 100 ${u}</p></div>`;
+}
+function healthRows(pr){
+  const rows = [], u = pr.unit;
+  if(Array.isArray(pr.add)){
+    const list = pr.add.map(c => { const [nm, rk, cl] = addInfo(c); return { c, nm, cl, rk, t: ADD_RISK[rk] || ADD_RISK[""] }; });
+    const worst = list.some(a => a.rk === "h") ? "r" : list.some(a => a.rk === "m") ? "o" : list.length ? "y" : "g1";
+    rows.push({ ic: "add", name: "Additifs", sub: !list.length ? "Sans additif" : worst === "r" ? "Contient des additifs à risque" : worst === "o" ? "Additifs à risque modéré" : "Pas d'alerte EFSA sur ces additifs",
+      val: String(list.length), tone: worst, bad: list.length > 0,
+      more: list.length ? `<ul class="yk-adds">${list.map(a => `<li><i style="background:${TONE[a.t[0]]}"></i><span><b>${esc(a.c)}${a.nm ? " · " + esc(a.nm) : ""}</b><small>${a.cl ? esc(a.cl) + " · " : ""}${esc(a.t[1])}</small></span></li>`).join("")}</ul>` : "" });
+  }
+  [["kcal", pr.hasNutri ? pr.k : null, "kcal"], ["sug", pr.sug, "sug"], ["sat", pr.sat, "sat"], ["salt", pr.salt, "salt"]].forEach(([key, v, ic]) => {
+    if(v == null) return;
+    const S = SCALE[key], th = pr.drink ? S.d : S.s, i = v <= th[0] ? 0 : v <= th[1] ? 1 : v <= th[2] ? 2 : 3, tone = ["g1", "g2", "o", "r"][i];
+    rows.push({ ic, name: S.name, sub: v === 0 ? S.zero : S.txt[i], val: nf(v) + S.u, tone, bad: i >= 2,
+      more: gauge(th, ["g1", "g2", "o", "r"], v, u, th[2] * 1.6 || 1) });
   });
-  if(pr.p >= 5) rows.push({ name: "Protéines", val: pr.p, label: pr.p >= 10 ? "Riche en protéines" : "Source de protéines", tone: pr.p >= 10 ? "g1" : "g2" });
-  if(pr.fib != null && pr.fib >= 3) rows.push({ name: "Fibres", val: pr.fib, label: pr.fib >= 6 ? "Riche en fibres" : "Source de fibres", tone: pr.fib >= 6 ? "g1" : "g2" });
+  [["prot", pr.hasNutri ? pr.p : null], ["fib", pr.fib], ["fvl", pr.fvl]].forEach(([key, v]) => {
+    if(v == null) return;
+    const S = POS[key], i = v >= S.th[1] ? 2 : v >= S.th[0] ? 1 : 0;
+    if(i === 0) return;
+    rows.push({ ic: key, name: S.name, sub: S.txt[i], val: nf(v) + S.u, tone: i === 2 ? "g1" : "g2", bad: false, more: gauge(S.th, ["n", "g2", "g1"], v, u, S.th[1] * 1.6) });
+  });
   return rows;
 }
-const rowHtml = r => `<li class="t-${r.tone}"><i aria-hidden="true"></i><span>${esc(r.name)}<small>${esc(r.label)}</small></span><b>${gTxt(r.val)}</b></li>`;
-const sumTxt = q => `${fmt(q.kcal)} kcal · P ${dec(q.p)} g · G ${dec(q.c)} g · L ${dec(q.l)} g`;
-
-function productCard(s){
-  const pr = s.product, u = pr.unit || "g", g = s.g || 0, q = forQty(pr, g);
-  const ns = pr.grade ? NS[pr.grade] : null;
-  const rows = pr.hasNutri ? nutriRows(pr) : [];
-  const bad = rows.filter(r => r.tone === "o" || r.tone === "r").sort((a,b) => (b.tone === "r") - (a.tone === "r"));
-  const good = rows.filter(r => r.tone === "g1" || r.tone === "g2");
-  const chips = [];
-  if(pr.serving) chips.push([rq(pr.serving), `1 portion · ${fq(pr.serving)} ${u}`]);
-  chips.push([100, `100 ${u}`]);
-  if(pr.pq && pr.pq !== 100) chips.push([rq(pr.pq), `${pr.drink ? "Bouteille" : "Paquet"} entier · ${fq(pr.pq)} ${u}`]);
-  const tags = [
-    pr.nova ? `<span class="yk-tag nova n${pr.nova}">NOVA ${pr.nova} · ${NOVA[pr.nova] || ""}</span>` : "",
-    Array.isArray(pr.add) ? `<span class="yk-tag${pr.add.length ? "" : " ok"}">${pr.add.length ? `${pr.add.length} additif${pr.add.length > 1 ? "s" : ""} : ${esc(pr.add.slice(0, 6).join(", "))}${pr.add.length > 6 ? "…" : ""}` : "Sans additif"}</span>` : ""
-  ].join("");
-  return `<article class="yk" aria-label="Fiche produit">
-    <header class="yk-h">
-      ${pr.img ? `<img src="${esc(pr.img)}" alt="" referrerpolicy="no-referrer">` : `<div class="yk-noimg" aria-hidden="true"></div>`}
-      <div class="yk-id">
-        <h3>${esc(pr.name || pr.n)}</h3>
-        <p>${esc([pr.brand, pr.qty].filter(Boolean).join(" · ")) || (pr.src === "perso" ? "Aliment enregistré" : "&nbsp;")}</p>
-        ${pr.src === "perso" ? "" : `<div class="yk-score" style="--c:${ns ? ns[1] : "#5d6584"}"><b>${ns ? pr.grade.toUpperCase() : "?"}</b><span>${ns ? ns[0] : "Non noté"}<small>Nutri-Score</small></span></div>`}
+function envRows(pr){
+  const E = pr.env || {}, rows = [];
+  if(E.agri != null){ const a = E.agri, i = a >= 80 ? 0 : a >= 60 ? 1 : a >= 40 ? 2 : a >= 20 ? 3 : 4;
+    rows.push({ ic: "prod", name: "Production", sub: ["Très faible impact", "Faible impact", "Impact modéré", "Impact élevé", "Impact très élevé"][i], val: `${fmt(a)}/100`, tone: ["g1", "g2", "o", "r", "r"][i], bad: i >= 2,
+      more: `<p class="yk-more-t">Impact de la production des ingrédients (analyse de cycle de vie Agribalyse de l'ADEME).</p>` }); }
+  const labs = [...new Set([...(E.labels || []), ...(pr.labels || []).filter(l => ENV_LABELS[l])])].filter(l => ENV_LABELS[l]);
+  labs.forEach(l => rows.push({ ic: "lab", name: ENV_LABELS[l], sub: ENV_LABEL_SUB[l] || "Label environnemental", check: true, tone: "g1", bad: false }));
+  const pk = E.pack || {};
+  if(pk.mats && pk.mats.length && pk.score != null){ const s = pk.score, i = s >= 70 ? 0 : s >= 50 ? 1 : s >= 30 ? 2 : 3;
+    const mats = [...new Set(pk.mats.map(([sh, m]) => [SHAPE[tag(sh)] || "", MAT[tag(m)] || tag(m).replace(/-/g, " ")].filter(Boolean).join(" en ")))].filter(Boolean);
+    rows.push({ ic: "pack", name: "Emballage", sub: ["Emballage à faible impact", "Impact modéré", "Emballage polluant", "Emballage très polluant"][i], val: `${fmt(s)}/100`, tone: ["g1", "g2", "o", "r"][i], bad: i >= 2,
+      more: mats.length ? `<p class="yk-more-t">${esc(mats.join(" · "))}</p>` : "" });
+  } else rows.push({ ic: "pack", name: "Emballage", sub: "Non renseigné", tone: "n", bad: false, grey: true });
+  if(E.orig && E.orig.length){ const C = (window.PDM_OFFDATA || {}).ctry || {};
+    const list = E.orig.map(([o, p]) => { const c = C[o] || [tag(o).replace(/-/g, " "), ""]; return { n: c[0], f: flag(c[1]), p }; });
+    const sc = E.origScore, near = sc != null ? sc >= 60 : (E.origVal == null || E.origVal >= 0);
+    rows.push({ ic: "orig", name: "Origine", sub: list.map(x => x.n).join(", "), val: list.slice(0, 3).map(x => x.f).join(" "), tone: near ? "g1" : "o", bad: !near,
+      more: `<p class="yk-more-t">${list.map(x => `${x.f} ${esc(x.n)}${x.p && x.p < 100 ? ` (${fmt(x.p)} %)` : ""}`).join("<br>")}</p>` });
+  } else rows.push({ ic: "orig", name: "Origine", sub: "Non renseignée", tone: "n", bad: false, grey: true });
+  if(E.threat) rows.push({ ic: "threat", name: tag(E.threat) === "palm-oil" ? "Huile de palme" : "Espèces menacées", sub: "Contribue à la déforestation", tone: "r", bad: true });
+  return rows;
+}
+const rowHtml = (r, i) => `<li class="yk-row${r.more ? " has-more" : ""}${r.grey ? " grey" : ""}" ${r.more ? `data-row="${i}" tabindex="0" role="button" aria-expanded="false"` : ""}>
+  ${icon(r.ic)}<span class="yk-rt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>
+  <span class="yk-rv">${r.check ? `<em class="yk-check">✓</em>` : `${r.val ? `<span>${r.val}</span>` : ""}<i style="background:${TONE[r.tone]}"></i>`}${r.more ? `<svg class="yk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>` : ""}</span>
+  ${r.more ? `<div class="yk-more">${r.more}</div>` : ""}</li>`;
+function rowsBlock(rows, per){
+  const bad = rows.filter(r => r.bad), good = rows.filter(r => !r.bad && !r.grey), grey = rows.filter(r => r.grey);
+  let k = 0; const list = rs => `<ul class="yk-rows">${rs.map(r => rowHtml(r, k++)).join("")}</ul>`;
+  return `${bad.length ? `<div class="yk-sec"><h4>Points négatifs</h4>${per ? `<small>${per}</small>` : ""}</div>${list(bad)}` : ""}
+    ${good.length ? `<div class="yk-sec"><h4>Points positifs</h4>${per && !bad.length ? `<small>${per}</small>` : ""}</div>${list(good)}` : ""}
+    ${grey.length ? `<div class="yk-sec"><h4>Non renseigné</h4></div>${list(grey)}` : ""}`;
+}
+function nutriTable(pr){
+  const u = pr.unit, sv = pr.serving, L = [["Énergie", pr.k, " kcal"], ["Matières grasses", pr.l, " g"], ["dont saturées", pr.sat, " g", 1], ["Glucides", pr.c, " g"], ["dont sucres", pr.sug, " g", 1], ["Fibres", pr.fib, " g"], ["Protéines", pr.p, " g"], ["Sel", pr.salt, " g"]].filter(x => x[1] != null);
+  return `<table class="yk-tab"><thead><tr><th></th><th>100 ${u}</th>${sv ? `<th>Portion (${fq(sv)} ${u})</th>` : ""}</tr></thead><tbody>
+    ${L.map(([n, v, un, sub]) => `<tr${sub ? ' class="sub"' : ""}><td>${n}</td><td>${nf(v)}${un}</td>${sv ? `<td>${nf(v * sv / 100)}${un}</td>` : ""}</tr>`).join("")}</tbody></table>`;
+}
+function sheetHtml(pr){
+  const [st, sl] = scoreTone(pr.score), eg = ENVG[(pr.env || {}).grade];
+  const hRows = pr.hasNutri || Array.isArray(pr.add) ? healthRows(pr) : [];
+  const eRows = pr.src === "off" ? envRows(pr) : [];
+  const fav = D.customFoods.some(f => f.code === pr.code && f.fav);
+  const alg = (pr.allergens || []).map(a => ALG[a] || tag(a)).filter(Boolean);
+  return `<header class="yk-top">
+      ${pr.img ? `<img class="yk-pic" src="${esc(pr.img)}" alt="" referrerpolicy="no-referrer">` : `<div class="yk-pic yk-nopic" aria-hidden="true"></div>`}
+      <div class="yk-id"><h2>${esc(pr.name || pr.n)}</h2><p>${esc(pr.brand || (pr.src === "perso" ? "Aliment enregistré" : ""))}</p>
+        <div class="yk-head-score" data-tabshow="h"><i style="background:${TONE[st]}"></i><span><b>${pr.score == null ? "?" : pr.score}<small>/100</small></b><em>${sl}</em></span></div>
+        ${eg ? `<div class="yk-head-score env" data-tabshow="e" hidden><svg class="yk-leaf" viewBox="0 0 40 40" aria-hidden="true"><path fill="${eg[2]}" d="M36 4C18 4 6 12 6 26c0 3 .7 5.6 1.8 7.6L4 37.5l2 2 3.7-3.7C11.8 37 14.3 38 18 38 30 38 36 26 36 4z"/><text x="20" y="27" text-anchor="middle" font-size="${eg[0].length > 1 ? 12 : 15}" font-weight="900" fill="#fff">${eg[0]}</text></svg><span><b class="gs">Green-Score</b><em>${eg[1]}</em></span></div>` : ""}
       </div>
     </header>
-    ${pr.hasNutri ? `
-    <div class="yk-kcal"><b>${fmt(pr.k)}</b> kcal <span>pour 100 ${u}${pr.serving ? ` · ${fmt(pr.k * pr.serving / 100)} kcal la portion` : ""}</span></div>
-    <div class="yk-macros"><span><b>${dec(pr.p)} g</b>protéines</span><span><b>${dec(pr.c)} g</b>glucides</span><span><b>${dec(pr.l)} g</b>lipides</span></div>
-    ${bad.length ? `<h4>Points faibles</h4><ul class="yk-list">${bad.map(rowHtml).join("")}</ul>` : ""}
-    ${good.length ? `<h4>Points forts</h4><ul class="yk-list">${good.map(rowHtml).join("")}</ul>` : ""}
-    ${tags ? `<div class="yk-tags">${tags}</div>` : ""}
-    <form id="prod" class="yk-add" autocomplete="off">
-      <h4>Je l'ai mangé</h4>
+    ${eRows.length ? `<div class="yk-tabs" role="tablist"><button role="tab" data-tab="h" aria-selected="true">Santé</button><button role="tab" data-tab="e" aria-selected="false">Environnement</button></div>` : ""}
+    <div class="yk-pane" data-pane="h">
+      ${hRows.length ? rowsBlock(hRows, `pour 100 ${pr.unit === "ml" ? "mL" : "g"}`) : `<p class="yk-empty">Pas de valeurs nutritionnelles pour ce produit dans Open Food Facts.</p>`}
+      ${pr.hasNutri ? `<div class="yk-pdm"><b>${fmt(pr.k)} kcal</b> · ${dec(pr.p)} g prot. · ${dec(pr.c)} g gluc. · ${dec(pr.l)} g lip. <small>pour 100 ${pr.unit}${pr.serving ? ` · portion ${fq(pr.serving)} ${pr.unit} = ${fmt(pr.k * pr.serving / 100)} kcal` : ""}</small></div>` : ""}
+      ${pr.src === "off" ? `<div class="yk-sec"><h4>Plus d'informations</h4></div>
+      <div class="yk-info">
+        <div class="yk-ns" aria-label="Nutri-Score ${pr.grade ? pr.grade.toUpperCase() : "inconnu"}">${"abcde".split("").map(g => `<span class="ns-${g}${g === pr.grade ? " on" : ""}">${g.toUpperCase()}</span>`).join("")}<small>Nutri-Score</small></div>
+        ${pr.nova ? `<div class="yk-nova n${pr.nova}"><b>${pr.nova}</b><span>NOVA · ${["", "Aliment non transformé", "Ingrédient culinaire", "Aliment transformé", "Ultra-transformé"][pr.nova]}</span></div>` : ""}
+      </div>
+      ${pr.hasNutri ? `<details class="yk-det"><summary>Valeurs nutritionnelles</summary>${nutriTable(pr)}</details>` : ""}
+      ${pr.ingr ? `<details class="yk-det"><summary>Ingrédients</summary><p>${esc(pr.ingr)}</p></details>` : ""}
+      ${alg.length ? `<details class="yk-det"><summary>Allergènes</summary><p>${esc(alg.join(", "))}</p></details>` : ""}` : ""}
+    </div>
+    ${eRows.length ? `<div class="yk-pane" data-pane="e" hidden>${rowsBlock(eRows, "")}${!eg ? `<p class="yk-empty">Green-Score non calculé pour ce produit.</p>` : ""}</div>` : ""}
+    ${pr.src === "off" && pr.cats && pr.cats.length ? `<div class="yk-sec"><h4>Recommandations</h4></div><div class="yk-recos" aria-live="polite"><p class="yk-empty">Recherche de meilleures alternatives…</p></div>` : ""}
+    <div class="yk-sec"><h4>Options</h4></div>
+    <div class="yk-opts">
+      <button type="button" data-opt="fav" aria-pressed="${fav}"><span>${fav ? "Retirer des favoris" : "Ajouter aux favoris"}</span><b>${fav ? "★" : "☆"}</b></button>
+      <details><summary><span>Méthode de calcul</span><b>?</b></summary><p>Note PDM sur 100, inspirée de la méthode publiée par Yuka : 60 % qualité nutritionnelle (Nutri-Score), 30 % additifs (alertes de surexposition de l'EFSA), 10 % bio. Un additif à risque élevé plafonne la note à 49. Ce n'est pas la note officielle de Yuka : elle peut différer de quelques points. Couleurs des nutriments : seuils du Nutri-Score pour 100 g (ou 100 ml pour les boissons). Données : Open Food Facts.</p></details>
+      ${pr.src === "off" ? `<a href="https://fr.openfoodfacts.org/produit/${esc(pr.code)}" target="_blank" rel="noopener"><span>Voir ou corriger sur Open Food Facts</span><b>↗</b></a>` : ""}
+      <button type="button" data-opt="again"><span>Scanner un autre produit</span><b>›</b></button>
+    </div>`;
+}
+function dockHtml(pr){
+  if(!pr.hasNutri) return `<button class="btn" type="button" data-act="scan-free">Le saisir à la main</button>`;
+  const s = state.scan, u = pr.unit, g = s.g || 0, q = forQty(pr, g), chips = [];
+  if(pr.serving) chips.push([rq(pr.serving), `1 portion · ${fq(pr.serving)} ${u}`]);
+  chips.push([100, `100 ${u}`]);
+  if(pr.pq && pr.pq !== 100) chips.push([rq(pr.pq), `${pr.drink ? "Bouteille entière" : "Paquet entier"} · ${fq(pr.pq)} ${u}`]);
+  return `<form id="prod" class="yk-add" autocomplete="off">
+    <div class="yk-add-body">
       <div class="yk-chips">${chips.map(([v, l]) => `<button type="button" data-q="${v}" aria-pressed="${v === rq(g)}">${l}</button>`).join("")}</div>
       <div class="yk-qty">
         ${pr.serving ? `<label class="f">Portions<input name="por" inputmode="decimal" value="${fq(g / pr.serving)}"></label><span class="yk-eq" aria-hidden="true">=</span>` : ""}
@@ -451,13 +587,140 @@ function productCard(s){
       </div>
       <div class="seg yk-meal" role="group" aria-label="Repas">${MEALS.map(([k, l]) => `<button type="button" data-pm="${k}" aria-pressed="${k === state.meal}">${l}</button>`).join("")}</div>
       <p class="yk-sum" aria-live="polite">${sumTxt(q)}</p>
-      <button class="btn green big" type="submit">Ajouter ${fmt(q.kcal)} kcal</button>
-    </form>` : `
-    ${tags ? `<div class="yk-tags">${tags}</div>` : ""}
-    <div class="alert">Ce produit n'a pas de valeurs nutritionnelles dans Open Food Facts.</div>
-    <button class="btn" type="button" data-act="scan-free">Le saisir à la main</button>`}
-    <button class="btn ghost yk-again" type="button" data-act="scan-again">Scanner un autre produit</button>
-  </article>`;
+    </div>
+    <button class="btn green big" type="submit" data-eat>J'en ai mangé</button>
+  </form>`;
+}
+const sumTxt = q => `${fmt(q.kcal)} kcal · P ${dec(q.p)} g · G ${dec(q.c)} g · L ${dec(q.l)} g`;
+
+let sheet = null;
+function closeSheet(){ if(!sheet) return; const el = sheet; sheet = null; el.classList.remove("on"); document.documentElement.classList.remove("yk-lock"); setTimeout(() => el.remove(), 260); renderAdd(); }
+function rerenderSheet(){ if(!sheet) return; const sc = sheet.querySelector(".yk-scroll"), top = sc.scrollTop; sc.innerHTML = sheetHtml(state.scan.product); sc.scrollTop = top; bindSheet(); loadRecos(); }
+function openSheet(){
+  if(sheet){ sheet.remove(); sheet = null; }
+  const pr = state.scan.product;
+  const el = document.createElement("div"); el.className = "yk-ov";
+  el.innerHTML = `<div class="yk-back" data-close></div>
+    <section class="yk-sheet" role="dialog" aria-modal="true" aria-label="${esc(pr.name || pr.n)}">
+      <div class="yk-grab" aria-hidden="true"><i></i></div>
+      <button class="yk-x" type="button" data-close aria-label="Fermer">×</button>
+      <div class="yk-scroll">${sheetHtml(pr)}</div>
+      <div class="yk-dock">${dockHtml(pr)}</div>
+    </section>`;
+  document.body.appendChild(el); sheet = el;
+  document.documentElement.classList.add("yk-lock");
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("on")));
+  el.addEventListener("click", e => { if(e.target.closest("[data-close]")) closeSheet(); });
+  el.addEventListener("keydown", e => { if(e.key === "Escape") closeSheet(); });
+  swipe(el); bindSheet(); bindDock(); loadRecos();
+}
+function swipe(el){ /* glisser vers le bas pour fermer, comme Yuka */
+  const sh = el.querySelector(".yk-sheet"), sc = el.querySelector(".yk-scroll");
+  let y0 = null, dy = 0;
+  sh.addEventListener("touchstart", e => { if(e.target.closest(".yk-dock")) return; if(sc.scrollTop <= 0 || e.target.closest(".yk-grab")){ y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+  sh.addEventListener("touchmove", e => { if(y0 == null) return; dy = e.touches[0].clientY - y0; if(dy > 0){ sh.style.transition = "none"; sh.style.transform = `translateY(${dy}px)`; } }, { passive: true });
+  sh.addEventListener("touchend", () => { if(y0 == null) return; sh.style.transition = ""; sh.style.transform = ""; if(dy > 110) closeSheet(); y0 = null; });
+}
+function bindSheet(){
+  const el = sheet; if(!el) return;
+  $$("[data-tab]", el).forEach(b => b.onclick = () => {
+    const t = b.dataset.tab;
+    $$("[data-tab]", el).forEach(x => x.setAttribute("aria-selected", x === b));
+    $$("[data-pane]", el).forEach(p => p.hidden = p.dataset.pane !== t);
+    $$("[data-tabshow]", el).forEach(p => p.hidden = p.dataset.tabshow !== t);
+  });
+  $$("[data-row]", el).forEach(r => {
+    const tog = () => { const o = !r.classList.contains("open"); r.classList.toggle("open", o); r.setAttribute("aria-expanded", o); };
+    r.onclick = e => { if(!e.target.closest(".yk-more")) tog(); };
+    r.onkeydown = e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); tog(); } };
+  });
+  const fav = $("[data-opt=fav]", el);
+  if(fav) fav.onclick = () => {
+    const pr = state.scan.product; let f = D.customFoods.find(x => x.code === pr.code);
+    if(!f){ f = { n: pr.n, k: pr.k, p: pr.p, c: pr.c, l: pr.l, code: pr.code }; D.customFoods.unshift(f); }
+    f.fav = !f.fav; P.save(f.fav ? "Ajouté aux favoris" : "Retiré des favoris");
+    fav.setAttribute("aria-pressed", f.fav); fav.innerHTML = `<span>${f.fav ? "Retirer des favoris" : "Ajouter aux favoris"}</span><b>${f.fav ? "★" : "☆"}</b>`; renderFoods();
+  };
+  const ag = $("[data-opt=again]", el); if(ag) ag.onclick = () => { closeSheet(); state.scan = null; renderAdd(); startCamera(); };
+}
+function bindDock(){
+  const el = sheet, prod = $("#prod", el), pr = state.scan.product;
+  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: pr.n || "" }; closeSheet(); state.scan = null; state.mode = "free"; render(); };
+  if(!prod) return;
+  const body = $(".yk-add-body", prod);
+  const upd = from => {
+    const s = state.scan; s.touched = true;
+    if(from === "por"){ const v = num(prod.por.value); if(v == null || v < 0) return; s.g = rq(v * pr.serving); prod.g.value = fq(s.g); }
+    else { const v = num(prod.g.value); s.g = v != null && v >= 0 ? v : 0; if(prod.por) prod.por.value = fq(s.g / pr.serving); }
+    const q = forQty(pr, s.g);
+    $(".yk-sum", prod).textContent = sumTxt(q);
+    if(prod.classList.contains("open")) $("[data-eat]", prod).textContent = `Ajouter ${fmt(q.kcal)} kcal`;
+    $$("[data-q]", prod).forEach(c => c.setAttribute("aria-pressed", +c.dataset.q === rq(s.g)));
+  };
+  prod.g.oninput = () => upd("g");
+  if(prod.por) prod.por.oninput = () => upd("por");
+  $$("[data-q]", prod).forEach(c => c.onclick = () => { prod.g.value = fq(+c.dataset.q); upd("g"); });
+  $$("[data-pm]", prod).forEach(b => b.onclick = () => {
+    state.meal = b.dataset.pm;
+    $$("[data-pm]", prod).forEach(x => x.setAttribute("aria-pressed", x === b));
+    $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x.dataset.meal === state.meal));
+  });
+  prod.onsubmit = e => {
+    e.preventDefault();
+    if(!prod.classList.contains("open")){ /* 1er appui : ouvre le choix de quantité */
+      prod.classList.add("open"); state.scan.touched = true; upd("keep");
+      $("[data-eat]", prod).textContent = `Ajouter ${fmt(forQty(pr, state.scan.g).kcal)} kcal`; return;
+    }
+    const g = state.scan.g;
+    if(!g || g <= 0){ toast("Indique la quantité"); prod.g.focus(); return; }
+    if(pr.src !== "perso") saveFood({ n: pr.n, k: pr.k, p: pr.p, c: pr.c, l: pr.l, code: pr.code, serving: g });
+    else { const f = D.customFoods.find(x => x.code === pr.code); if(f) f.serving = g; }
+    addItems([item(pr, g, "off")]); state.scan = null; closeSheet();
+  };
+}
+/* alternatives mieux notées dans la même catégorie (recherche Open Food Facts, mise en cache 7 jours) */
+const RECO_CACHE = "pdm-off-reco";
+async function loadRecos(){
+  const el = sheet && $(".yk-recos", sheet); if(!el) return;
+  const pr = state.scan.product, cats = (pr.cats || []).filter(c => c.startsWith("en:")).slice(-2).reverse();
+  const show = list => { if(!sheet || state.scan.product.code !== pr.code) return;
+    const min = Math.max((pr.score ?? 0) + 10, 50);
+    const better = list.filter(x => x.code !== pr.code && x.score != null && x.score >= min).sort((a, b) => b.score - a.score).slice(0, 8);
+    el.innerHTML = better.length ? `<div class="yk-reco-row">${better.map(x => { const [t, l] = scoreTone(x.score); return `<button type="button" class="yk-reco" data-code="${esc(x.code)}">
+      ${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="yk-nopic"></span>`}
+      <b>${esc(x.name)}</b><small>${esc(x.brand)}</small><span class="yk-rs"><i style="background:${TONE[t]}"></i>${x.score}/100 <em>${l}</em></span></button>`; }).join("")}</div>`
+      : `<p class="yk-empty">${pr.score != null && pr.score >= 75 ? "Ce produit fait déjà partie des meilleurs de sa catégorie." : "Pas de meilleure alternative trouvée dans sa catégorie."}</p>`;
+    $$(".yk-reco", el).forEach(b => b.onclick = () => lookup(b.dataset.code));
+  };
+  const cache = lsJSON(RECO_CACHE, {});
+  let all = [];
+  for(const cat of cats){
+    const hit = cache[cat];
+    let list = hit && Date.now() - hit.at < 7 * 864e5 ? hit.list : null;
+    if(!list){
+      try{
+        const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 12000);
+        const r = await fetch(`https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(cat)}&countries_tags=en:france&sort_by=popularity_key&page_size=40&fields=code,product_name,product_name_fr,brands,image_front_small_url,nutriscore_grade,nutriscore_score,nutriscore_data,additives_tags,labels_tags,categories_tags,product_quantity_unit,quantity&lc=fr`, { signal: ctl.signal });
+        clearTimeout(to);
+        const j = await r.json();
+        list = (j.products || []).filter(p => p.code && (p.product_name_fr || p.product_name)).map(p => { const o = offProduct(p.code, p); return { code: o.code, name: o.name, brand: o.brand, img: o.thumb, score: o.score }; });
+        try{ cache[cat] = { at: Date.now(), list }; const ks = Object.keys(cache).sort((a, b) => cache[b].at - cache[a].at); ks.slice(30).forEach(k => delete cache[k]); localStorage.setItem(RECO_CACHE, JSON.stringify(cache)); }catch(e){}
+      }catch(e){ list = []; }
+    }
+    all = all.concat(list.filter(x => !all.some(y => y.code === x.code)));
+    if(all.filter(x => x.score != null && x.score >= Math.max((pr.score ?? 0) + 10, 50) && x.code !== pr.code).length >= 4) break;
+  }
+  show(all);
+}
+
+function miniCard(pr){
+  const [t, l] = scoreTone(pr.score);
+  return `<div class="cal-mini">
+    ${pr.thumb || pr.img ? `<img src="${esc(pr.thumb || pr.img)}" alt="" referrerpolicy="no-referrer">` : `<span class="yk-nopic"></span>`}
+    <div><b>${esc(pr.name || pr.n)}</b><small><i style="background:${TONE[t]}"></i>${pr.score == null ? "Non noté" : pr.score + "/100 · " + l}</small></div>
+    <button class="btn sm" type="button" data-act="sheet-open">Voir la fiche</button>
+  </div>
+  <button class="btn ghost sm" type="button" data-act="scan-again" style="margin-top:10px">Scanner un autre produit</button>`;
 }
 
 function photoBlock(){
@@ -662,37 +925,10 @@ function bindAdd(){
   const cam = $("[data-act=cam]", el); if(cam) cam.onclick = startCamera;
   const bcp = $("#bc-photo"); if(bcp) bcp.onchange = e => { const f = e.target.files[0]; if(f) decodePhoto(f); };
   const bc = $("#bc"); if(bc) bc.onsubmit = e => { e.preventDefault(); lookup(bc.code.value); };
-  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { const s = state.scan || {}; state.free = { n: (s.product && s.product.n) || "" }; state.scan = null; state.mode = "free"; render(); };
+  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: "" }; state.scan = null; state.mode = "free"; render(); };
   const again = $("[data-act=scan-again]", el); if(again) again.onclick = () => { state.scan = null; renderAdd(); startCamera(); };
-  const prod = $("#prod");
-  if(prod){
-    const pr = state.scan.product;
-    const upd = from => {
-      const s = state.scan; s.touched = true;
-      if(from === "por"){ const v = num(prod.por.value); if(v == null || v < 0) return; s.g = rq(v * pr.serving); prod.g.value = fq(s.g); }
-      else { const v = num(prod.g.value); s.g = v != null && v >= 0 ? v : 0; if(prod.por) prod.por.value = fq(s.g / pr.serving); }
-      const q = forQty(pr, s.g);
-      prod.querySelector(".yk-sum").textContent = sumTxt(q);
-      prod.querySelector("[type=submit]").textContent = `Ajouter ${fmt(q.kcal)} kcal`;
-      $$("[data-q]", prod).forEach(c => c.setAttribute("aria-pressed", +c.dataset.q === rq(s.g)));
-    };
-    prod.g.oninput = () => upd("g");
-    if(prod.por) prod.por.oninput = () => upd("por");
-    $$("[data-q]", prod).forEach(c => c.onclick = () => { prod.g.value = c.dataset.q; upd("g"); });
-    $$("[data-pm]", prod).forEach(b => b.onclick = () => {
-      state.meal = b.dataset.pm;
-      $$("[data-pm]", prod).forEach(x => x.setAttribute("aria-pressed", x === b));
-      $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x.dataset.meal === state.meal));
-    });
-    prod.onsubmit = e => {
-      e.preventDefault(); const g = state.scan.g;
-      if(!g || g <= 0){ toast("Indique la quantité"); prod.g.focus(); return; }
-      if(pr.src !== "perso") saveFood({ n: pr.n, k: pr.k, p: pr.p, c: pr.c, l: pr.l, code: pr.code, serving: g });
-      else { const f = D.customFoods.find(x => x.code === pr.code); if(f) f.serving = g; }
-      addItems([item(pr, g, "off")]); state.scan = null; renderAdd();
-      const top = $("#h-add"); if(top) top.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-  }
+  const so = $("[data-act=sheet-open]", el); if(so) so.onclick = () => openSheet();
+  $$("[data-fav]", el).forEach(b => b.onclick = () => lookup(b.dataset.fav));
 
   /* recherche */
   const f = $("#food");
