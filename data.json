@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T09:11:03.416Z",
+ "updatedAt": "2026-11-22T09:53:43.755Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2275,7 +2275,32 @@
    ]
   }
  },
- "meals": {},
+ "meals": {
+  "2026-11-22": [
+   {
+    "id": "mmwrnt64rybf2",
+    "n": "Oeufs brouillés",
+    "g": 100,
+    "k": 145,
+    "p": 12.5,
+    "c": 0.7,
+    "l": 10.3,
+    "m": "pdj",
+    "src": "photo"
+   },
+   {
+    "id": "mmwrnt64re5n2",
+    "n": "Huile de cuisson",
+    "g": 5,
+    "k": 900,
+    "p": 0,
+    "c": 0,
+    "l": 100,
+    "m": "pdj",
+    "src": "photo"
+   }
+  ]
+ },
  "customFoods": [],
  "calTargets": {
   "kcalMin": 3000,
