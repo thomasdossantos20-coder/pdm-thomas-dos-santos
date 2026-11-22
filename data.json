@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T12:47:16.498Z",
+ "updatedAt": "2026-11-22T18:52:55.999Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2353,10 +2353,33 @@
     "l": 0.7,
     "m": "dej",
     "src": "photo"
+   },
+   {
+    "id": "mmws72la6yam6",
+    "n": "HERTA Lardons Nature 200g",
+    "g": 200,
+    "k": 248,
+    "p": 17,
+    "c": 0,
+    "l": 20,
+    "m": "din",
+    "src": "off",
+    "code": "3154230802167",
+    "sv": 50,
+    "svn": "portion"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "HERTA Lardons Nature 200g",
+   "k": 248,
+   "p": 17,
+   "c": 0,
+   "l": 20,
+   "code": "3154230802167",
+   "serving": 200
+  },
   {
    "n": "Pain de mie american sandwich complet sans sucres ajoutés 600g · Harrys",
    "k": 280,
