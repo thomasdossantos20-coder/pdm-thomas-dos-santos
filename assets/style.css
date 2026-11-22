@@ -491,6 +491,18 @@ tr.editing td{background:rgba(255,138,31,.07)}
 .cal-opt:hover{border-color:var(--flame)}
 .cal-opt small{color:var(--muted);font-weight:500}
 .cal-opt.ai{border-style:dashed;border-color:rgba(255,138,31,.5)}
+.cal-sub{margin:8px 0 0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cal-sub::before{content:none}
+.cal-hist{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:6px;align-items:stretch}
+.cal-hist .cal-opt{min-width:0}
+.cal-hist .cal-opt span{overflow-wrap:anywhere}
+.cal-plus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;text-align:center;padding:6px 10px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(76,195,120,.55);background:rgba(76,195,120,.14);color:var(--text);font:inherit;font-weight:700}
+.cal-plus b{font-size:14px;white-space:nowrap}
+.cal-plus small{color:var(--muted);font-weight:500;font-size:12px}
+.cal-plus:active{transform:scale(.97)}
+.cal-por{margin-top:8px}
+.cal-gem{font-size:12.5px;margin:8px 0 0}
 .cal-meal + .cal-meal{margin-top:18px}
 .cal-meal-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:14px 0 4px}
 .cal-meal-h h3{font-family:var(--display);font-size:17px}

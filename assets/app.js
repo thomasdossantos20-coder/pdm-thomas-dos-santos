@@ -353,38 +353,90 @@ const gemCfg = {
   get model(){ return lsGet(GMODEL); }, set model(v){ lsSet(GMODEL, v); },
   defaultModel: GDEFAULT
 };
-/* gemini({ parts | history, schema?, system?, temperature? }) → objet JSON si schema, sinon texte.
-   Essaie les modèles dans l'ordre : si Google est surchargé (503), en quota (429), ne répond pas ou a fermé
-   le modèle (404), on passe au suivant. Flash d'abord (plus précis), Flash Lite en secours (rapide, dispo). */
-const GCHAIN = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.8-flash"];
-/* modèle en panne mis de côté : 15 min (surcharge, quota, pas de réponse), 7 jours (fermé) */
-const GSKIP = "pdm-gemini-skip";
-const skipGet = () => { try { return JSON.parse(lsGet(GSKIP) || "{}"); } catch(e){ return {}; } };
-const skipSet = (m, ms) => { const o = skipGet(); o[m] = Date.now() + ms; lsSet(GSKIP, JSON.stringify(o)); };
+/* gemini({ parts | history, schema?, system?, temperature?, lite?, avoid? }) → objet JSON si schema, sinon texte.
+   Offre gratuite (mesurée en 2026, Google ne publie plus les chiffres) : chaque modèle Flash ≈ 5 requêtes/min et 20/jour,
+   chaque Flash-Lite ≈ 15/min et 500/jour. Le quota est compté PAR MODÈLE : on enchaîne donc les versions Flash
+   (3.8, 3.7, 3.6…) avant de passer au Flash-Lite. Remise à zéro à minuit heure du Pacifique (9 h à Paris). */
+const GFALL = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview",
+  "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"];
+const GCHAIN = GFALL;
+const GLIST = "pdm-gemini-models", GSKIP = "pdm-gemini-skip", GUSE = "pdm-gemini-use";
+const ptDay = (t = Date.now()) => new Date(t).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+const untilReset = () => { const now = new Date(), pt = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  const next = new Date(pt); next.setHours(24, 0, 0, 0); return next - pt + 60e3; };
+const jget = (k, d) => { try { return JSON.parse(lsGet(k) || "null") || d; } catch(e){ return d; } };
+/* modèle mis de côté : { modèle: [jusqu'à, raison] } */
+const skipGet = () => { const o = jget(GSKIP, {}); for(const m in o) if(typeof o[m] === "number") o[m] = [o[m], ""]; return o; };
+const skipSet = (m, ms, why) => { const o = skipGet(); o[m] = [Date.now() + ms, why || ""]; lsSet(GSKIP, JSON.stringify(o)); };
 const skipDel = m => { const o = skipGet(); if(o[m]){ delete o[m]; lsSet(GSKIP, JSON.stringify(o)); } };
+const useAdd = m => { const u = jget(GUSE, {}); if(u.day !== ptDay()){ u.day = ptDay(); u.n = {}; } u.n[m] = (u.n[m] || 0) + 1; lsSet(GUSE, JSON.stringify(u)); };
+const shortName = m => m.replace(/^gemini-/, "").replace(/-latest$/, " (dernier)").replace(/-preview.*$/, " preview").replace(/-?flash-lite/, " Flash-Lite").replace(/-?flash/, " Flash").trim();
+/* ordre : Flash stables du plus récent au plus ancien, Flash preview, puis Flash-Lite ; les alias « -latest » en dernier
+   (ils pointent vers un modèle déjà dans la liste et partagent son quota) */
+function rankModels(names){
+  const info = n => { const m = n.match(/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(-preview[\w-]*)?$/); return m ? { n, v: parseFloat(m[1]), lite: !!m[2], pre: !!m[3] } : null; };
+  const c = names.map(info).filter(x => x && x.v >= 2.5);
+  const grp = x => (x.lite ? 2 : 0) + (x.pre ? 1 : 0);
+  c.sort((a, b) => grp(a) - grp(b) || b.v - a.v || a.n.length - b.n.length);
+  const flash = c.filter(x => !x.lite && !x.pre).slice(0, 5), pre = c.filter(x => !x.lite && x.pre).slice(0, 2);
+  const lite = c.filter(x => x.lite && !x.pre).slice(0, 3), litePre = c.filter(x => x.lite && x.pre).slice(0, 1);
+  const out = [...flash, ...pre, ...lite, ...litePre].map(x => x.n);
+  ["gemini-flash-latest", "gemini-flash-lite-latest"].forEach(a => { if(names.includes(a)) out.push(a); });
+  return out.length ? out : GFALL;
+}
+/* liste des modèles ouverts à cette clé (gratuit, ne consomme pas de quota), gardée 1 jour */
+async function modelList(key){
+  const c = jget(GLIST, null);
+  if(c && c.k === key.slice(-6) && Date.now() - c.at < 864e5 && c.list.length) return c.list;
+  try{
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=300", { headers: { "x-goog-api-key": key }, signal: ctl.signal });
+    clearTimeout(tm);
+    if(!r.ok) return c ? c.list : GFALL;
+    const ms = ((await r.json()).models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => m.name.replace("models/", ""));
+    const list = rankModels(ms);
+    lsSet(GLIST, JSON.stringify({ k: key.slice(-6), at: Date.now(), list }));
+    return list;
+  }catch(e){ return c ? c.list : GFALL; }
+}
+function gemStatus(){
+  const u = jget(GUSE, {}), used = u.day === ptDay() ? u.n || {} : {};
+  const sk = skipGet(), now = Date.now();
+  const blocked = Object.entries(sk).filter(([, [t]]) => t > now).map(([m, [t, why]]) => ({ m, name: shortName(m), until: t, why }));
+  const list = (jget(GLIST, null) || {}).list || GFALL;
+  return { used, total: Object.values(used).reduce((a, b) => a + b, 0), blocked, list,
+    reset: new Date(Date.now() + untilReset() - 60e3).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) };
+}
 const NOTHINK_KO = new Set();
 async function gemini(o){
   const key = gemCfg.key;
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
-  const all = [...new Set([gemCfg.model, ...GCHAIN].filter(Boolean))], sk = skipGet(), now = Date.now();
-  const ok = all.filter(m => !(sk[m] > now));
-  let chain = ok.length ? [...ok, ...all.filter(m => !ok.includes(m))] : all;
-  if(o.avoid && o.avoid.length){ const av = chain.filter(m => o.avoid.includes(m)); chain = [...chain.filter(m => !o.avoid.includes(m)), ...av]; } /* les modèles mis de côté restent en tout dernier recours */
+  let base = await modelList(key);
+  if(o.lite) base = [...base.filter(m => /lite/.test(m)), ...base.filter(m => !/lite/.test(m))]; /* textes simples : on garde les Flash pour les photos */
+  const all = [...new Set([gemCfg.model, ...base].filter(Boolean))], sk = skipGet(), now = Date.now();
+  const ok = all.filter(m => !(sk[m] && sk[m][0] > now));
+  let chain = ok;
+  if(o.avoid && o.avoid.length){ const av = chain.filter(m => o.avoid.includes(m)); chain = [...chain.filter(m => !o.avoid.includes(m)), ...av]; }
+  if(!chain.length){
+    const st = gemStatus();
+    throw new Error(`Quota Gemini gratuit épuisé sur tous les modèles. Il revient à ${st.reset} (minuit en Californie).`);
+  }
   const gc = { temperature: o.temperature ?? 0.2 };
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
   /* thinkingBudget: 0 = pas de « réflexion », réponse plus rapide ; si le modèle refuse ce réglage, on relance sans */
   const withThink = JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: { thinkingBudget: 0 } } }), plain = JSON.stringify(body), fails = [];
+  let quotaDay = 0;
   for(const [i, model] of chain.entries()){
     let r, payload = NOTHINK_KO.has(model) ? plain : withThink;
-    const wait = i < chain.length - 1 ? 25000 : 50000;
+    const wait = i < chain.length - 1 ? 30000 : 50000;
     for(let attempt = 0; attempt < 2; attempt++){
       const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), wait);
       try{
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
           method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
-      }catch(e){ r = null; fails.push(`${model} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); if(e.name === "AbortError") skipSet(model, 15*60e3); }
+      }catch(e){ r = null; fails.push(`${shortName(model)} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); if(e.name === "AbortError") skipSet(model, 5*60e3, "pas de réponse"); }
       clearTimeout(timer);
       if(r && r.status === 400 && payload === withThink){
         const msg = await r.clone().json().then(j => (j.error && j.error.message) || "").catch(() => "");
@@ -394,21 +446,37 @@ async function gemini(o){
     }
     if(!r) continue;
     if(!r.ok){
-      let msg = ""; try { msg = (await r.json()).error.message || ""; } catch(e){}
+      let err = {}; try { err = (await r.json()).error || {}; } catch(e){}
+      const msg = err.message || "";
       if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
-      if([404, 429, 500, 503, 504].includes(r.status)){ skipSet(model, r.status === 404 ? 7*864e5 : 15*60e3); fails.push(`${model} : ${r.status === 503 ? "surchargé" : r.status === 429 ? "quota" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
+      if(r.status === 429){
+        const det = err.details || [], qf = det.find(d => /QuotaFailure/.test(d["@type"] || "")), ri = det.find(d => /RetryInfo/.test(d["@type"] || ""));
+        const vio = (qf && qf.violations) || [];
+        const zero = vio.some(v => String(v.quotaValue) === "0") || /limit: 0\b/.test(msg);
+        const daily = vio.some(v => /PerDay/i.test(v.quotaId || "")) || (!vio.length && /per day|daily/i.test(msg));
+        const delay = ri && ri.retryDelay ? parseFloat(ri.retryDelay) * 1000 : 60e3;
+        if(zero){ skipSet(model, 7*864e5, "pas dans l'offre gratuite"); fails.push(`${shortName(model)} : pas gratuit`); }
+        else if(daily){ skipSet(model, untilReset(), "quota du jour"); fails.push(`${shortName(model)} : quota du jour`); quotaDay++; }
+        else { skipSet(model, Math.max(delay, 15e3) + 2e3, "trop de requêtes à la minute"); fails.push(`${shortName(model)} : trop de requêtes, attends 1 min`); }
+        continue;
+      }
+      if([404, 500, 503, 504].includes(r.status)){ skipSet(model, r.status === 404 ? 7*864e5 : 5*60e3, r.status === 404 ? "fermé" : "surchargé"); fails.push(`${shortName(model)} : ${r.status === 503 ? "surchargé" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
       throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg.slice(0, 160) : ""));
     }
     const j = await r.json();
     const c = j.candidates && j.candidates[0];
     const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
-    if(!txt){ fails.push(`${model} : réponse vide${c && c.finishReason ? " (" + c.finishReason + ")" : ""}`); continue; }
+    useAdd(model);
+    if(!txt){ fails.push(`${shortName(model)} : réponse vide${c && c.finishReason ? " (" + c.finishReason + ")" : ""}`); continue; }
     gemCfg.lastModel = model; skipDel(model);
     return o.schema ? JSON.parse(txt) : txt;
   }
   if(!navigator.onLine) throw new Error("Pas de connexion internet.");
-  throw new Error("Gemini indisponible pour l'instant (" + fails.join(", ") + "). Réessaie dans quelques minutes.");
+  const st = gemStatus();
+  if(quotaDay && fails.every(f => /quota du jour|pas gratuit|fermé/.test(f))) throw new Error(`Quota Gemini gratuit du jour épuisé (${st.total} requêtes aujourd'hui). Il revient à ${st.reset}.`);
+  throw new Error("Gemini indisponible pour l'instant (" + fails.join(", ") + "). Réessaie dans une minute.");
 }
+gemini.list = modelList;
 async function pickModel(key){
   try{
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
@@ -439,7 +507,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, md, lastLoad, version: 23 };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemShort: shortName, md, lastLoad, version: 24 };
 
 renderShell();
 })();

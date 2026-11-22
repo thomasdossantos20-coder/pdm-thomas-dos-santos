@@ -31,7 +31,7 @@ const shiftDate = (iso, d) => { const x = new Date(iso + "T12:00"); x.setDate(x.
 const qtyLabel = it => it.por ? "1 portion" : `${fmt(it.g)} g`;
 
 let mode = "photo"; try { mode = localStorage.getItem("pdm-cal-mode") || "photo"; } catch(e){}
-const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, edit: null };
+const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, edit: null, list: [] };
 
 /* ---------- Gemini : prompts ---------- */
 const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. En cas de doute sur une quantité ou une valeur, prends toujours l'estimation basse de la fourchette plutôt que la haute (mieux vaut sous-estimer que surestimer). Si tu hésites sur un aliment, liste-le quand même avec ta meilleure estimation basse. Renvoie une liste vide seulement s'il n'y a vraiment aucune nourriture sur la photo, et explique pourquoi dans le commentaire. Si un élément qui change nettement les calories n'est pas identifiable (photo floue, sombre ou coupée, aliment caché ou emballé, sauce, huile ou garniture inconnue, type de boisson, taille réelle de la portion, texte d'emballage illisible), pose jusqu'à 3 questions courtes et précises dans « questions », en français, en tutoyant, et donne quand même ta meilleure estimation basse dans « aliments ». Si la photo est claire, « questions » est une liste vide : ne pose pas de question pour un détail de moins de 50 kcal. Noms en français, courts.";
@@ -359,7 +359,8 @@ function renderAdd(){
         <label class="btn${state.busy === "photo" ? " is-busy" : ""}">Prendre une photo<input type="file" data-photo accept="image/*" capture="environment" hidden></label>
         <label class="btn ghost${state.busy === "photo" ? " is-busy" : ""}">Depuis la galerie<input type="file" data-photo accept="image/*" hidden></label>
       </div>
-      ${state.photo ? photoBlock() : `<p class="muted cal-hint">Gemini repère chaque aliment et estime les grammes. Tu corriges avant d'ajouter.</p>`}`;
+      ${state.photo ? photoBlock() : `<p class="muted cal-hint">Gemini repère chaque aliment et estime les grammes. Tu corriges avant d'ajouter.</p>`}
+      ${gemLine()}`;
   }
   if(state.mode === "scan"){
     const s = state.scan;
@@ -723,6 +724,13 @@ function miniCard(pr){
   <button class="btn ghost sm" type="button" data-act="scan-again" style="margin-top:10px">Scanner un autre produit</button>`;
 }
 
+/* compteur Gemini du jour (offre gratuite : ≈ 20 requêtes par modèle Flash, 500 en Flash-Lite) */
+function gemLine(){
+  if(!P.gemStatus) return "";
+  const st = P.gemStatus(), day = st.blocked.filter(b => /jour/.test(b.why)), min = st.blocked.filter(b => /minute/.test(b.why));
+  if(!st.total && !st.blocked.length) return "";
+  return `<p class="muted cal-gem">Gemini aujourd'hui : ${st.total} requête${st.total > 1 ? "s" : ""}${day.length ? ` · quota du jour atteint sur ${day.map(b => b.name).join(", ")} (retour à ${st.reset})` : ""}${min.length ? ` · en pause 1 min : ${min.map(b => b.name).join(", ")}` : ""}</p>`;
+}
 function photoBlock(){
   const ph = state.photo, items = ph.items || [], qs = ph.questions || [];
   const tot = sum(items.filter(it => it.on));
@@ -744,6 +752,7 @@ function photoBlock(){
         <input class="cal-g" data-ph-g="${i}" inputmode="decimal" value="${r0(it.g)}" aria-label="Grammes de ${esc(it.n)}"><span class="muted">g</span>
         <b>${fmt(forQty(it).kcal)}</b></li>`).join("")}</ul>
       ${ph.comment ? `<p class="details" style="margin:4px 0">${esc(ph.comment)}</p>` : ""}
+      ${ph.model ? `<p class="muted cal-gem" style="margin:0">Analysé par ${esc(P.gemShort ? P.gemShort(ph.model) : ph.model)}</p>` : ""}
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn green" data-act="ph-add">Ajouter ${fmt(tot.kcal)} kcal</button>
         <button class="btn ghost sm" data-act="ph-cancel">Annuler</button>
@@ -751,15 +760,34 @@ function photoBlock(){
   </div>`;
 }
 
+function histRow(h, i){
+  const g = h.g, q = forQty(h, g);
+  return `<div class="cal-hist"><button type="button" class="cal-opt" data-pick="${i}"><span>${esc(h.n)}</span><small>${h.cnt > 1 ? `Déjà mangé ${h.cnt} fois` : "Déjà mangé"} · ${h.days === 0 ? "aujourd'hui" : h.days === 1 ? "hier" : `il y a ${h.days} j`} · ${fmt(h.k)} kcal/100 ${h.u === "ml" ? "ml" : "g"}</small></button>
+    <button type="button" class="cal-plus" data-quick="${i}" aria-label="Ajouter ${esc(portionTxt(h, g))} de ${esc(h.n)}"><b>+ ${esc(portionTxt(h, g).split(" · ")[0])}</b><small>${fmt(q.kcal)} kcal</small></button></div>`;
+}
 function suggestions(){
   const q = norm(state.q);
   if(state.busy === "food") return `<p class="muted cal-hint">Gemini estime « ${esc(state.q)} »…</p>`;
-  if(state.pick) return `<p class="muted cal-hint">Sélectionné : <b>${esc(state.pick.n)}</b> · ${fmt(state.pick.k)} kcal, ${dec(state.pick.p)} g prot. pour 100 g${state.pick.src === "gemini" ? " (estimation Gemini)" : ""}. Indique les grammes puis Ajouter.</p>`;
-  if(q.length < 2) return `<p class="muted cal-hint">Tape au moins 2 lettres : ${(window.PDM_FOODS || []).length} aliments de base + tes aliments enregistrés.</p>`;
-  const words = q.split(/\s+/);
-  const hits = allFoods().filter(f => { const n = norm(f.n); return words.every(w => n.includes(w)); }).slice(0, 8);
-  return `${hits.map(f => `<button type="button" class="cal-opt" data-pick="${esc(f.n)}"><span>${esc(f.n)}</span><small>${fmt(f.k)} kcal · ${dec(f.p)} g prot. /100 g${f.src === "perso" ? " · perso" : ""}</small></button>`).join("")}
-    <button type="button" class="cal-opt ai" data-act="ask"><span>${hits.length ? "Pas le bon ? " : "Introuvable : "}estimer « ${esc(state.q.trim())} » avec Gemini</span><small>valeurs pour 100 g, enregistrées pour la prochaine fois</small></button>`;
+  if(state.pick){
+    const p = state.pick, u = p.u === "ml" ? "ml" : "g";
+    const por = p.sv ? `<div class="chips cal-por">${[1, 2, 3].map(k => `<button type="button" class="chip" data-gq="${rq(p.sv * k)}">${k} ${esc(plural(p.svn || "portion", k))} · ${fq(p.sv * k)} ${u}</button>`).join("")}</div>` : "";
+    return `<p class="muted cal-hint">Sélectionné : <b>${esc(p.n)}</b> · ${fmt(p.k)} kcal, ${dec(p.p)} g prot. pour 100 ${u}${p.src === "gemini" && !p.hist ? " (estimation Gemini)" : ""}.${p.hist ? ` Dernière fois : ${esc(portionTxt(p, p.g))}.` : ""} Indique les ${u === "ml" ? "ml" : "grammes"} puis Ajouter.</p>${por}`;
+  }
+  const H = history();
+  if(q.length < 2){
+    const top = H.slice(0, 12); state.list = top;
+    return top.length ? `<h4 class="cal-sub">Tes habituels${state.meal ? " · " + MEALS.find(m => m[0] === state.meal)[1].toLowerCase() + " en tête" : ""}</h4>${top.map(histRow).join("")}
+      <p class="muted cal-hint">« + » ajoute la même quantité que la dernière fois. Touche le nom pour changer la quantité.</p>`
+      : `<p class="muted cal-hint">Tape au moins 2 lettres : ${(window.PDM_FOODS || []).length} aliments de base + tes aliments enregistrés. Ce que tu ajoutes apparaîtra ici en premier la prochaine fois.</p>`;
+  }
+  const ok = matcher(state.q);
+  const hh = H.filter(h => ok(h.n)).slice(0, 15);
+  const seen = new Set(hh.map(h => norm(h.n)));
+  const rest = allFoods().filter(f => !seen.has(norm(f.n)) && ok(f.n)).slice(0, 10);
+  state.list = [...hh, ...rest];
+  return `${hh.length ? `<h4 class="cal-sub">Déjà mangé</h4>${hh.map(histRow).join("")}${rest.length ? `<h4 class="cal-sub">Autres aliments</h4>` : ""}` : ""}
+    ${rest.map((f, j) => `<button type="button" class="cal-opt" data-pick="${hh.length + j}"><span>${esc(f.n)}</span><small>${fmt(f.k)} kcal · ${dec(f.p)} g prot. /100 g${f.src === "perso" ? " · perso" : ""}</small></button>`).join("")}
+    <button type="button" class="cal-opt ai" data-act="ask"><span>${hh.length || rest.length ? "Pas le bon ? " : "Introuvable : "}estimer « ${esc(state.q.trim())} » avec Gemini</span><small>valeurs pour 100 g, enregistrées pour la prochaine fois</small></button>`;
 }
 
 function renderDay(){
@@ -814,11 +842,69 @@ function addItems(items){
   P.save(items.length > 1 ? `${items.length} aliments ajoutés` : `${items[0].n} ajouté`);
   refreshData();
 }
-const item = (food, g, src) => ({ id: uid("m"), n: food.n, g, k: r1(food.k), p: r1(food.p), c: r1(food.c), l: r1(food.l), m: state.meal, src });
+const item = (food, g, src) => { const it = { id: uid("m"), n: food.n, g, k: r1(food.k), p: r1(food.p), c: r1(food.c), l: r1(food.l), m: state.meal, src };
+  const si = food.sv ? { sv: food.sv, svn: food.svn } : servInfo(food.serving, food.servingTxt);
+  if(food.code) it.code = food.code; if(si){ it.sv = si.sv; it.svn = si.svn; }
+  if(food.unit === "ml" || food.u === "ml") it.u = "ml"; if(food.por) it.por = true;
+  return it; };
+/* « 1 tranche (42 g) » → { sv: 42, svn: "tranche" } ; « 2 biscuits (25 g) » → 12,5 g le biscuit */
+function servInfo(sv, txt){
+  if(!(sv > 0)) return null;
+  const m = String(txt || "").toLowerCase().match(/^\s*(\d+(?:[.,]\d+)?)?\s*([a-zàâçéèêëîïôûùüÿœ]{3,})/);
+  let name = "portion", cnt = 1;
+  if(m && !/^(gr|grammes?|ml|cl|litres?|kg|portions?|serving|environ|une?)$/.test(m[2])){ name = m[2]; cnt = m[1] ? parseFloat(m[1].replace(",", ".")) || 1 : 1; }
+  if(cnt > 1 && /s$/.test(name)) name = name.slice(0, -1);
+  return { sv: rq(sv / cnt), svn: name };
+}
+const plural = (w, n) => n > 1 && !/[sx]$/.test(w) ? w.replace(/^(\S+)/, "$1s") : w;
+/* « 1 tranche · 44 g » si la quantité tombe sur un nombre de portions, sinon « 44 g » */
+function portionTxt(f, g){
+  const u = f.u === "ml" || f.unit === "ml" ? "ml" : "g";
+  if(f.por) return "1 portion";
+  if(f.sv){ const n = g / f.sv, k = Math.round(n); if(k >= 1 && Math.abs(n - k) < 0.06) return `${k} ${plural(f.svn || "portion", k)} · ${fq(g)} ${u}`; }
+  return `${fq(g)} ${u}`;
+}
+
+/* ---------- historique : tout ce que tu as déjà ajouté (scan, recherche, photo, saisie), le plus fréquent d'abord ---------- */
+function history(){
+  const map = new Map(), dates = Object.keys(D.meals).sort().reverse();
+  for(const d of dates) for(const it of D.meals[d] || []){
+    if(!it || !it.n || !(it.g > 0)) continue;
+    const key = norm(it.n);
+    let h = map.get(key);
+    if(!h){ h = { n: it.n, k: it.k, p: it.p, c: it.c, l: it.l, g: it.g, por: !!it.por, code: it.code, sv: it.sv, svn: it.svn, u: it.u, src: it.src, last: d, cnt: 0, meals: {}, hist: true }; map.set(key, h); }
+    h.cnt++; const m = it.m || "dej"; h.meals[m] = (h.meals[m] || 0) + 1;
+  }
+  const today = new Date(todayISO() + "T12:00");
+  for(const h of map.values()){
+    if(!h.sv){ /* anciens ajouts : on retrouve la portion via l'aliment enregistré et la fiche Open Food Facts en cache */
+      const f = D.customFoods.find(x => norm(x.n) === norm(h.n)); const code = h.code || (f && f.code);
+      const pr = code && offGet(code); const si = pr && servInfo(pr.serving, pr.servingTxt);
+      if(code) h.code = code; if(si){ h.sv = si.sv; h.svn = si.svn; } if(pr && pr.drink) h.u = "ml";
+    }
+    h.days = Math.round((today - new Date(h.last + "T12:00")) / 864e5);
+    h.score = h.cnt + 2 * (h.meals[state.meal] || 0) - h.days * 0.08;
+  }
+  return [...map.values()].sort((a, b) => b.score - a.score);
+}
+/* tolère une faute de frappe d'une lettre sur les mots de 4 lettres ou plus (« harris » trouve « Harrys ») */
+function near(a, b){
+  if(Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, e = 0;
+  while(i < a.length && j < b.length){ if(a[i] === b[j]){ i++; j++; continue; } if(++e > 1) return false;
+    if(a.length > b.length) i++; else if(b.length > a.length) j++; else { i++; j++; } }
+  return e + (a.length - i) + (b.length - j) <= 1;
+}
+function matcher(q){
+  const words = norm(q).split(/[\s,.'’·-]+/).filter(Boolean);
+  return name => { const n = norm(name), toks = n.split(/[\s,.'’·()-]+/).filter(Boolean);
+    return words.every(w => n.includes(w) || (w.length >= 4 && toks.some(t => near(w, t) || (t.length > w.length && near(w, t.slice(0, w.length)))))); };
+}
 
 function bindStatic(){
   $("#cal-day").onchange = e => { if(e.target.value){ state.date = e.target.value; state.edit = null; refreshData(); } };
-  $$("[data-meal]", root).forEach(b => b.onclick = () => { state.meal = b.dataset.meal; $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  $$("[data-meal]", root).forEach(b => b.onclick = () => { state.meal = b.dataset.meal; $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x === b));
+    const sg = $("#sugg"); if(sg && !state.pick) sg.innerHTML = suggestions(); });
   $$("[data-mode]", root).forEach(b => b.onclick = () => {
     state.mode = b.dataset.mode; try { localStorage.setItem("pdm-cal-mode", state.mode); } catch(e){}
     $$("[data-mode]", root).forEach(x => x.setAttribute("aria-selected", x === b)); renderAdd();
@@ -936,8 +1022,15 @@ function bindAdd(){
     f.q.oninput = () => { state.q = f.q.value; state.pick = null; $("#sugg").innerHTML = suggestions(); };
     f.g.oninput = () => { state.g = f.g.value; };
     $("#sugg").onclick = e => {
+      const qk = e.target.closest("[data-quick]");
+      if(qk){ const h = state.list[+qk.dataset.quick]; if(!h) return;
+        addItems([item(h, h.g, h.src || "base")]); state.q = f.q.value = ""; state.pick = null; $("#sugg").innerHTML = suggestions(); return; }
+      const gq = e.target.closest("[data-gq]");
+      if(gq){ state.g = f.g.value = fq(+gq.dataset.gq); return; }
       const o = e.target.closest("[data-pick]");
-      if(o){ state.pick = allFoods().find(x => x.n === o.dataset.pick); state.q = f.q.value = state.pick.n; $("#sugg").innerHTML = suggestions(); f.g.focus(); return; }
+      if(o){ state.pick = state.list[+o.dataset.pick]; if(!state.pick) return; state.q = f.q.value = state.pick.n;
+        if(state.pick.hist){ state.g = f.g.value = fq(state.pick.g); }
+        $("#sugg").innerHTML = suggestions(); f.g.focus(); return; }
       if(e.target.closest("[data-act=ask]")) ask();
     };
     f.onsubmit = e => {
@@ -946,7 +1039,7 @@ function bindAdd(){
       const food = state.pick || allFoods().find(x => norm(x.n) === norm(f.q.value));
       if(!food){ toast(f.q.value.trim() ? "Choisis un aliment dans la liste ou demande à Gemini" : "Tape un aliment"); return; }
       if(!g || g <= 0){ f.g.focus(); toast("Indique les grammes"); return; }
-      addItems([item(food, g, food.src === "gemini" ? "gemini" : "base")]);
+      addItems([item(food, g, food.hist ? food.src || "base" : food.src === "gemini" ? "gemini" : "base")]);
       state.q = ""; state.g = ""; state.pick = null; renderAdd();
     };
   }
@@ -954,7 +1047,7 @@ function bindAdd(){
     const q = state.q.trim(); if(!q) return;
     state.busy = "food"; $("#sugg").innerHTML = suggestions();
     try{
-      const r = await P.gemini({ parts: [{ text: PROMPT_FOOD(q) }], schema: SCHEMA_FOOD });
+      const r = await P.gemini({ parts: [{ text: PROMPT_FOOD(q) }], schema: SCHEMA_FOOD, lite: true });
       const food = { n: r.nom || q, k: r1(r.kcal), p: r1(r.proteines), c: r1(r.glucides), l: r1(r.lipides) };
       saveFood(food); P.save(); renderFoods();
       state.pick = { ...food, src: "gemini" }; state.q = food.n;
