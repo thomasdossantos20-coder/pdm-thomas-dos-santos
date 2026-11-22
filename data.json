@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-21T19:45:11.162Z",
+ "updatedAt": "2026-11-22T09:11:03.416Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -211,6 +211,12 @@
    "id": "wmwkcjsmcbvxj",
    "date": "2026-11-17",
    "kg": 71.9,
+   "note": ""
+  },
+  {
+   "id": "wmwrmaak8u6hw",
+   "date": "2026-11-22",
+   "kg": 72,
    "note": ""
   }
  ],
