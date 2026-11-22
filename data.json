@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T18:53:49.118Z",
+ "updatedAt": "2026-11-22T18:56:03.340Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2380,6 +2380,17 @@
     "src": "off",
     "code": "8076809585408",
     "u": "ml"
+   },
+   {
+    "id": "mmws76lu4veeb",
+    "n": "Crème légère 4% M.G. Bridélice",
+    "g": 20,
+    "k": 73,
+    "p": 3.2,
+    "c": 4.8,
+    "l": 4,
+    "m": "din",
+    "src": "photo"
    }
   ]
  },
