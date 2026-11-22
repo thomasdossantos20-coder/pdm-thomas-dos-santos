@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T18:52:55.999Z",
+ "updatedAt": "2026-11-22T18:53:49.118Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2367,10 +2367,32 @@
     "code": "3154230802167",
     "sv": 50,
     "svn": "portion"
+   },
+   {
+    "id": "mmws73q9q8cjd",
+    "n": "Pâtes premium Fusilli Al Bronzo 500G · Barilla",
+    "g": 200,
+    "k": 359,
+    "p": 14,
+    "c": 70,
+    "l": 2,
+    "m": "din",
+    "src": "off",
+    "code": "8076809585408",
+    "u": "ml"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "Pâtes premium Fusilli Al Bronzo 500G · Barilla",
+   "k": 359,
+   "p": 14,
+   "c": 70,
+   "l": 2,
+   "code": "8076809585408",
+   "serving": 200
+  },
   {
    "n": "HERTA Lardons Nature 200g",
    "k": 248,
