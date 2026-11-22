@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T10:04:54.595Z",
+ "updatedAt": "2026-11-22T10:05:23.328Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2298,10 +2298,31 @@
     "l": 100,
     "m": "pdj",
     "src": "photo"
+   },
+   {
+    "id": "mmwro85xcwdgj",
+    "n": "Pain de mie american sandwich complet sans sucres ajoutés 600g · Harrys",
+    "g": 42.9,
+    "k": 280,
+    "p": 7.7,
+    "c": 43,
+    "l": 6.8,
+    "m": "pdj",
+    "src": "off"
    }
   ]
  },
- "customFoods": [],
+ "customFoods": [
+  {
+   "n": "Pain de mie american sandwich complet sans sucres ajoutés 600g · Harrys",
+   "k": 280,
+   "p": 7.7,
+   "c": 43,
+   "l": 6.8,
+   "code": "3228857002344",
+   "serving": 42.9
+  }
+ ],
  "calTargets": {
   "kcalMin": 3000,
   "kcalMax": 3200,
