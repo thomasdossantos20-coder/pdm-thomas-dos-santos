@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T18:56:03.340Z",
+ "updatedAt": "2026-11-23T12:17:50.725Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2390,6 +2390,30 @@
     "c": 4.8,
     "l": 4,
     "m": "din",
+    "src": "photo"
+   }
+  ],
+  "2026-11-23": [
+   {
+    "id": "mmwt8ecucdj70",
+    "n": "Riz thaï à la tomate et œuf",
+    "g": 180,
+    "k": 140,
+    "p": 3,
+    "c": 26,
+    "l": 2.5,
+    "m": "dej",
+    "src": "photo"
+   },
+   {
+    "id": "mmwt8ecudx61q",
+    "n": "Boulettes de viande sauce aigre-douce",
+    "g": 130,
+    "k": 190,
+    "p": 12,
+    "c": 13,
+    "l": 9.3,
+    "m": "dej",
     "src": "photo"
    }
   ]
