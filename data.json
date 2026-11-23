@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-23T15:53:53.257Z",
+ "updatedAt": "2026-11-23T15:54:07.241Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2429,10 +2429,32 @@
     "code": "8410076801197",
     "sv": 42,
     "svn": "portion"
+   },
+   {
+    "id": "mmwtg4hl51ed1",
+    "n": "Amandes grillées salées",
+    "g": 30,
+    "k": 641,
+    "p": 26,
+    "c": 6.5,
+    "l": 54,
+    "m": "col",
+    "src": "off",
+    "code": "3270160856060",
+    "u": "ml"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "Amandes grillées salées",
+   "k": 641,
+   "p": 26,
+   "c": 6.5,
+   "l": 54,
+   "code": "3270160856060",
+   "serving": 30
+  },
   {
    "n": "Crunchy Oats and Dark chocolate, 2 Barres de 21 g · Nature Valley",
    "k": 473,
