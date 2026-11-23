@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-23T12:17:50.725Z",
+ "updatedAt": "2026-11-23T15:53:53.257Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2415,10 +2415,33 @@
     "l": 9.3,
     "m": "dej",
     "src": "photo"
+   },
+   {
+    "id": "mmwtg46soxd11",
+    "n": "Crunchy Oats and Dark chocolate, 2 Barres de 21 g · Nature Valley",
+    "g": 42,
+    "k": 473,
+    "p": 8.7,
+    "c": 61.5,
+    "l": 19.8,
+    "m": "col",
+    "src": "off",
+    "code": "8410076801197",
+    "sv": 42,
+    "svn": "portion"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "Crunchy Oats and Dark chocolate, 2 Barres de 21 g · Nature Valley",
+   "k": 473,
+   "p": 8.7,
+   "c": 61.5,
+   "l": 19.8,
+   "code": "8410076801197",
+   "serving": 42
+  },
   {
    "n": "Pâtes premium Fusilli Al Bronzo 500G · Barilla",
    "k": 359,
