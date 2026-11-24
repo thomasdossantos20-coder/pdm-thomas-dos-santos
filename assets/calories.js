@@ -3,7 +3,17 @@
 "use strict";
 const P = window.PDM, { $, $$, esc, num, uid, todayISO, fmtDate, toast } = P;
 const MEALS = [["pdj","Petit-déj"],["dej","Déjeuner"],["col","Collation"],["din","Dîner"]];
-const MODES = [["photo","Photo"],["scan","Code-barres"],["search","Recherche"],["free","Saisie libre"]];
+const MODES = [["chat","Écrire"],["search","Chercher"],["photo","Photo"],["scan","Code-barres"]];
+const ICON = {
+  chat: '<path d="M4.5 5.5h15v10.5H10l-5.5 4z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>',
+  search: '<circle cx="11" cy="11" r="6.3"/><path d="m15.8 15.8 4.4 4.4"/>',
+  photo: '<path d="M4 8.5h3.2l1.8-2.5h6l1.8 2.5H20V19H4z"/><circle cx="12" cy="13.3" r="3.4"/>',
+  scan: '<path d="M4 8.5V5h3.5M16.5 5H20v3.5M20 15.5V19h-3.5M7.5 19H4v-3.5"/><path d="M8 9v6M10.7 9v6M13.3 9v6M16 9v6"/>',
+  mic: '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
+  send: '<path d="M5 12h12M12.5 6.5 18 12l-5.5 5.5"/>'
+};
+const ico = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+const mealName = k => (MEALS.find(m => m[0] === k) || MEALS[1])[1];
 const root = $("#cal");
 
 await P.load();
@@ -13,7 +23,7 @@ D.customFoods = D.customFoods || [];
 D.calTargets = D.calTargets || { kcalMin: 3000, kcalMax: 3200, protMin: 130 };
 
 /* ---------- utilitaires ---------- */
-const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/æ/g, "ae").trim();
 const r0 = v => Math.round(v), r1 = v => Math.round(v*10)/10;
 const fmt = v => r0(v).toLocaleString("fr-FR");
 const rq = v => v < 10 ? Math.round(v*100)/100 : r1(v); /* quantités : 0,49 g reste 0,49 g */
@@ -30,8 +40,9 @@ function saveFood(food){
 const shiftDate = (iso, d) => { const x = new Date(iso + "T12:00"); x.setDate(x.getDate() + d); return x.toISOString().slice(0,10); };
 const qtyLabel = it => it.por ? "1 portion" : `${fmt(it.g)} g`;
 
-let mode = "photo"; try { mode = localStorage.getItem("pdm-cal-mode") || "photo"; } catch(e){}
-const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, edit: null, list: [] };
+let mode = "chat"; try { mode = localStorage.getItem("pdm-cal-mode") || "chat"; } catch(e){}
+if(!MODES.some(m => m[0] === mode)) mode = "chat";
+const state = { date: todayISO(), meal: defaultMeal(), mode, photo: null, busy: false, pick: null, q: "", g: "", scan: null, list: [], open: null, chat: { msgs: [], busy: false, draft: "" }, session: null };
 
 /* ---------- Gemini : prompts ---------- */
 const PROMPT_PHOTO = "Analyse cette photo de repas. Identifie chaque aliment visible, estime sa quantité en grammes (portion réellement présente dans l'assiette) et ses valeurs nutritionnelles pour cette quantité, en t'appuyant sur des valeurs de référence (table Ciqual). Pense aux matières grasses de cuisson et aux sauces visibles. En cas de doute sur une quantité ou une valeur, prends toujours l'estimation basse de la fourchette plutôt que la haute (mieux vaut sous-estimer que surestimer). Si tu hésites sur un aliment, liste-le quand même avec ta meilleure estimation basse. Renvoie une liste vide seulement s'il n'y a vraiment aucune nourriture sur la photo, et explique pourquoi dans le commentaire. Si un élément qui change nettement les calories n'est pas identifiable (photo floue, sombre ou coupée, aliment caché ou emballé, sauce, huile ou garniture inconnue, type de boisson, taille réelle de la portion, texte d'emballage illisible), pose jusqu'à 3 questions courtes et précises dans « questions », en français, en tutoyant, et donne quand même ta meilleure estimation basse dans « aliments ». Si la photo est claire, « questions » est une liste vide : ne pose pas de question pour un détail de moins de 50 kcal. Noms en français, courts.";
@@ -294,25 +305,24 @@ function showProduct(pr, lastQty){
   renderAdd(); openSheet();
 }
 
-/* ---------- rendu ---------- */
+/* ---------- rendu de la page ---------- */
+const dayLabel = () => { const t = todayISO(); return state.date === t ? "Aujourd'hui" : state.date === shiftDate(t, -1) ? "Hier" : state.date === shiftDate(t, 1) ? "Demain" : new Date(state.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long" }); };
 function render(){
+  const long = new Date(state.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   root.innerHTML = `
-  <div class="toolbar">
-    <div class="cal-date">
-      <button class="icon-btn" data-act="day" data-d="-1" aria-label="Jour précédent">‹</button>
-      <input type="date" id="cal-day" value="${state.date}" aria-label="Jour">
-      <button class="icon-btn" data-act="day" data-d="1" aria-label="Jour suivant">›</button>
-    </div>
-    ${state.date !== todayISO() ? `<button class="btn ghost sm" data-act="today">Aujourd'hui</button>` : ""}
+  <div class="cd-day">
+    <button class="cd-arrow" type="button" data-act="day" data-d="-1" aria-label="Jour précédent">‹</button>
+    <label class="cd-date"><b>${dayLabel()}</b><small>${long}</small><input type="date" id="cal-day" value="${state.date}" aria-label="Choisir le jour"></label>
+    <button class="cd-arrow" type="button" data-act="day" data-d="1" aria-label="Jour suivant">›</button>
   </div>
-  <section class="panel" id="tot" aria-label="Total du jour"></section>
-  <section class="panel section" aria-labelledby="h-add">
-    <h2 id="h-add">Ajouter</h2>
-    <div class="seg cal-seg" role="group" aria-label="Repas">${MEALS.map(([k,l]) => `<button data-meal="${k}" aria-pressed="${k===state.meal}">${l}</button>`).join("")}</div>
-    <div class="cal-modes" role="tablist" aria-label="Mode d'ajout">${MODES.map(([k,l]) => `<button role="tab" data-mode="${k}" aria-selected="${k===state.mode}">${l}</button>`).join("")}</div>
-    <div id="add"></div>
-  </section>
-  <section class="panel section" aria-labelledby="h-day"><h2 id="h-day"></h2><div id="day"></div></section>
+  <section class="panel cd-sum" id="tot" aria-label="Total du jour"></section>
+  <div class="cd-quick" role="group" aria-label="Ajouter un aliment">
+    <button type="button" data-open="chat">${ico("chat")}<span>Écrire</span></button>
+    <label class="cd-qbtn">${ico("photo")}<span>Photo</span><input type="file" accept="image/*" capture="environment" data-qphoto hidden></label>
+    <button type="button" data-open="scan">${ico("scan")}<span>Code-barres</span></button>
+    <button type="button" data-open="search">${ico("search")}<span>Chercher</span></button>
+  </div>
+  <div id="day" class="cd-meals"></div>
   <section class="panel section" aria-labelledby="h-week"><h2 id="h-week">7 derniers jours</h2><div id="week"></div></section>
   <section class="panel section" aria-labelledby="h-set">
     <details>
@@ -326,76 +336,143 @@ function render(){
       <div id="foods"></div>
     </details>
   </section>`;
-  renderTotals(); renderAdd(); renderDay(); renderWeek(); renderFoods();
+  renderTotals(); renderDay(); renderWeek(); renderFoods();
   bindStatic();
 }
 
 function renderTotals(){
   const t = sum(D.meals[state.date] || []), T = D.calTargets;
-  const pct = Math.min(100, t.kcal / T.kcalMax * 100), pctMin = T.kcalMin / T.kcalMax * 100;
-  const verdict = t.kcal === 0 ? "Rien noté pour ce jour." :
-    t.kcal < T.kcalMin ? `Il te manque <b>${fmt(T.kcalMin - t.kcal)} kcal</b> pour atteindre ${fmt(T.kcalMin)}.` :
-    t.kcal <= T.kcalMax ? "Objectif calories atteint." : `${fmt(t.kcal - T.kcalMax)} kcal au-dessus de ${fmt(T.kcalMax)}.`;
-  const pLeft = T.protMin - t.p;
+  const C = 2 * Math.PI * 52, pct = Math.min(1, t.kcal / T.kcalMin), left = T.kcalMin - t.kcal;
+  const status = t.kcal === 0 ? "Rien noté pour l'instant." : left > 0 ? `Encore <b>${fmt(left)} kcal</b> pour ton minimum.` : t.kcal <= T.kcalMax ? "<b>Objectif atteint.</b>" : `<b>${fmt(t.kcal - T.kcalMax)} kcal</b> au-dessus de ${fmt(T.kcalMax)}.`;
+  const pp = Math.min(100, t.p / T.protMin * 100);
   $("#tot").innerHTML = `
-    <div class="cal-big"><b>${fmt(t.kcal)}</b><span>/ ${fmt(T.kcalMin)}–${fmt(T.kcalMax)} kcal</span></div>
-    <div class="cal-bar" role="img" aria-label="${fmt(t.kcal)} kcal sur ${fmt(T.kcalMax)}"><i style="width:${pct}%"></i><em style="left:${pctMin}%"></em></div>
-    <p class="muted" style="margin:10px 0 14px">${verdict}${t.kcal && pLeft > 0 ? ` Protéines : encore <b>${fmt(pLeft)} g</b>.` : ""}</p>
-    <div class="stats cal-macros">
-      <div class="stat${t.p >= T.protMin ? " ok" : ""}"><b>${fmt(t.p)} g</b><small>protéines · min ${T.protMin} g</small></div>
-      <div class="stat"><b>${fmt(t.c)} g</b><small>glucides</small></div>
-      <div class="stat"><b>${fmt(t.l)} g</b><small>lipides</small></div>
+    <div class="cd-ring${t.kcal >= T.kcalMin ? " ok" : ""}" role="img" aria-label="${fmt(t.kcal)} kcal sur ${fmt(T.kcalMin)}">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="tr"/><circle cx="60" cy="60" r="52" class="pg" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(1)}"/></svg>
+      <div><b>${fmt(t.kcal)}</b><small>/ ${fmt(T.kcalMin)} kcal</small></div>
+    </div>
+    <div class="cd-side">
+      <p class="cd-left">${status}</p>
+      <div class="cd-mac"><span>Protéines</span><b class="${t.p >= T.protMin ? "ok" : ""}">${fmt(t.p)}<small> / ${T.protMin} g</small></b><i><em style="width:${pp}%"${t.p >= T.protMin ? ' class="ok"' : ""}></em></i></div>
+      <div class="cd-mac2"><span>Glucides <b>${fmt(t.c)} g</b></span><span>Lipides <b>${fmt(t.l)} g</b></span></div>
     </div>`;
 }
+
+/* ---------- feuilles (ajout, modification) ---------- */
+let adEl = null;
+function fitVV(el){ /* iPhone : la feuille suit le clavier */
+  const vv = window.visualViewport; if(!vv) return;
+  const f = () => { if(!el.isConnected){ vv.removeEventListener("resize", f); vv.removeEventListener("scroll", f); return; }
+    el.style.height = vv.height + "px"; el.style.top = vv.offsetTop + "px"; };
+  vv.addEventListener("resize", f); vv.addEventListener("scroll", f); f();
+}
+function sheetOpen(cls, inner, label){
+  const el = document.createElement("div"); el.className = "ad-ov " + cls;
+  el.innerHTML = `<div class="ad-back" data-adclose></div><section class="ad-sheet" role="dialog" aria-modal="true" aria-label="${esc(label)}">${inner}</section>`;
+  document.body.appendChild(el); document.documentElement.classList.add("ad-lock");
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("on")));
+  fitVV(el);
+  const head = el.querySelector(".ad-head"), sh = el.querySelector(".ad-sheet"); let y0 = null, dy = 0;
+  head.addEventListener("touchstart", e => { if(e.target.closest("button,input,label")) return; y0 = e.touches[0].clientY; dy = 0; }, { passive: true });
+  head.addEventListener("touchmove", e => { if(y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); sh.style.transition = "none"; sh.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  head.addEventListener("touchend", () => { if(y0 == null) return; sh.style.transition = ""; sh.style.transform = ""; y0 = null; if(dy > 90) el.dispatchEvent(new CustomEvent("adclose")); });
+  el.addEventListener("keydown", e => { if(e.key === "Escape") el.dispatchEvent(new CustomEvent("adclose")); });
+  return el;
+}
+function sheetClose(el){
+  if(!el) return; el.classList.remove("on"); setTimeout(() => el.remove(), 260);
+  if(!document.querySelector(".ad-ov.on")) document.documentElement.classList.remove("ad-lock");
+}
+function openAdd(mode, meal){
+  if(meal) state.meal = meal;
+  if(mode && mode !== state.mode){ state.mode = mode; try { localStorage.setItem("pdm-cal-mode", mode); } catch(e){} }
+  if(adEl){ syncAddHead(); renderAdd(); return adEl; }
+  state.session = { n: 0, kcal: 0 }; state.open = null;
+  adEl = sheetOpen("add", `
+    <header class="ad-head">
+      <div class="ad-grab" aria-hidden="true"><i></i></div>
+      <div class="ad-top"><h2>Ajouter</h2><span class="ad-count" id="ad-count" aria-live="polite"></span><button class="ad-x" type="button" data-adclose aria-label="Fermer">×</button></div>
+      <div class="ad-meals" role="group" aria-label="Repas">${MEALS.map(([k, l]) => `<button type="button" data-am="${k}">${l}</button>`).join("")}</div>
+      <div class="ad-tabs" role="tablist" aria-label="Façon d'ajouter">${MODES.map(([k, l]) => `<button type="button" role="tab" data-mode="${k}">${ico(k, 18)}<span>${l}</span></button>`).join("")}</div>
+    </header>
+    <div class="ad-body" id="add"></div>`, "Ajouter un aliment");
+  adEl.addEventListener("adclose", closeAdd);
+  adEl.addEventListener("click", e => {
+    if(e.target.closest("[data-adclose]")){ closeAdd(); return; }
+    const am = e.target.closest("[data-am]"); if(am){ state.meal = am.dataset.am; syncAddHead(); if(state.mode === "chat") renderAdd(); else if(state.mode === "search" && $("#sugg")) $("#sugg").innerHTML = suggestions(); return; }
+    const md = e.target.closest("[data-mode]"); if(md){ setMode(md.dataset.mode); return; }
+  });
+  syncAddHead(); renderAdd();
+  return adEl;
+}
+function syncAddHead(){
+  if(!adEl) return;
+  $$("[data-am]", adEl).forEach(b => b.setAttribute("aria-pressed", b.dataset.am === state.meal));
+  $$("[data-mode]", adEl).forEach(b => b.setAttribute("aria-selected", b.dataset.mode === state.mode));
+  const s = state.session, c = $("#ad-count", adEl);
+  if(c) c.textContent = s && s.n ? `✓ ${s.n} ajouté${s.n > 1 ? "s" : ""} · ${fmt(s.kcal)} kcal` : "";
+}
+function setMode(m){
+  state.mode = m; state.open = null; try { if(MODES.some(x => x[0] === m)) localStorage.setItem("pdm-cal-mode", m); } catch(e){}
+  syncAddHead(); renderAdd();
+  const b = adEl && $(".ad-body", adEl); if(b) b.scrollTop = 0;
+}
+function closeAdd(){
+  const el = adEl; adEl = null; sheetClose(el);
+  if(state.busy !== "photo") state.photo = null;
+  state.scan = null; state.q = ""; state.open = null; state.session = null;
+}
+const scrollAdd = () => { const b = adEl && $(".ad-body", adEl); if(b) requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }); };
 
 function renderAdd(){
   const el = $("#add"); if(!el) return;
   const noKey = !P.gemCfg.key;
   const keyNote = `<div class="alert" style="margin-bottom:12px">Pas de clé Gemini sur cet appareil. <a href="reglages.html" style="color:inherit">L'ajouter dans Réglages</a></div>`;
   let h = "";
+  el.classList.toggle("is-chat", state.mode === "chat");
+  if(state.mode === "chat") h = chatHtml(noKey ? keyNote : "");
   if(state.mode === "photo"){
     h = `${noKey ? keyNote : ""}
       <div class="cal-2btn">
-        <label class="btn${state.busy === "photo" ? " is-busy" : ""}">Prendre une photo<input type="file" data-photo accept="image/*" capture="environment" hidden></label>
+        <label class="btn${state.busy === "photo" ? " is-busy" : ""}">${ico("photo", 20)}Prendre une photo<input type="file" data-photo accept="image/*" capture="environment" hidden></label>
         <label class="btn ghost${state.busy === "photo" ? " is-busy" : ""}">Depuis la galerie<input type="file" data-photo accept="image/*" hidden></label>
       </div>
-      ${state.photo ? photoBlock() : `<p class="muted cal-hint">Gemini repère chaque aliment et estime les grammes. Tu corriges avant d'ajouter.</p>`}
+      ${state.photo ? photoBlock() : `<p class="muted cal-hint">Photographie ton assiette : Gemini repère chaque aliment et estime les grammes. Tu corriges avant d'ajouter.</p>`}
       ${gemLine()}`;
   }
   if(state.mode === "scan"){
     const s = state.scan;
-    const favs = D.customFoods.filter(f => f.fav && f.code);
+    const favs = D.customFoods.filter(f => f.fav && f.code), recent = D.customFoods.filter(f => f.code && !f.fav).slice(0, 8);
     h = s && s.product ? miniCard(s.product) : `
-      <button class="btn big scan-cta" type="button" data-act="cam"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M2 5h2v14H2zm3 0h1v14H5zm2 0h3v14H7zm4 0h1v14h-1zm3 0h2v14h-2zm3 0h1v14h-1zm2 0h3v14h-3z"/></svg>Scanner un code-barres</button>
+      <button class="btn big scan-cta" type="button" data-act="cam">${ico("scan", 24)}Scanner un code-barres</button>
       <form id="bc" class="form-row" style="margin-top:12px" autocomplete="off">
         <label class="f" data-wide>Ou tape les chiffres<input name="code" inputmode="numeric" placeholder="3017620422003" value="${esc(s && s.code ? s.code : "")}"></label>
         <button class="btn ghost" type="submit">Chercher</button>
       </form>
       <label class="btn ghost sm" style="margin-top:10px">Lire le code sur une photo<input type="file" id="bc-photo" accept="image/*" hidden></label>
-      ${favs.length ? `<div class="cal-favs"><h3>Favoris</h3><div class="chips">${favs.map(f => `<button type="button" class="chip" data-fav="${esc(f.code)}">★ ${esc(f.n)}</button>`).join("")}</div></div>` : ""}
-      ${!s ? `<p class="muted cal-hint">Produits du commerce via Open Food Facts, la base utilisée par Yuka. Gratuit, sans clé.</p>` :
+      ${!s ? "" :
         s.busy === "photo" ? `<p class="muted cal-hint">Lecture du code sur la photo…</p>` :
         s.busy === "off" ? `<div class="cal-mini skel" aria-busy="true"><span class="yk-nopic"></span><div><b>Recherche du produit…</b><small>${esc(s.code)}</small></div></div>` :
-        s.err ? `<div class="alert" style="margin-top:12px">${esc(s.err)}</div>${s.code ? `<button class="btn ghost sm" style="margin-top:10px" data-act="scan-free">Le saisir à la main</button>` : ""}` : ""}`;
+        s.err ? `<div class="alert" style="margin-top:12px">${esc(s.err)}</div>${s.code ? `<button class="btn ghost sm" style="margin-top:10px" data-act="scan-free">Le saisir à la main</button>` : ""}` : ""}
+      ${favs.length ? `<div class="cal-favs"><h3 class="cal-sub">Favoris</h3><div class="chips">${favs.map(f => `<button type="button" class="chip" data-fav="${esc(f.code)}">★ ${esc(f.n)}</button>`).join("")}</div></div>` : ""}
+      ${recent.length ? `<div class="cal-favs"><h3 class="cal-sub">Déjà scannés</h3><div class="chips">${recent.map(f => `<button type="button" class="chip" data-fav="${esc(f.code)}">${esc(f.n)}</button>`).join("")}</div></div>` : ""}
+      ${!s && !favs.length && !recent.length ? `<p class="muted cal-hint">Produits du commerce via Open Food Facts, la base utilisée par Yuka.</p>` : ""}`;
   }
   if(state.mode === "search"){
-    h = `<form id="food" class="form-row" autocomplete="off">
-        <label class="f" data-wide>Aliment<input name="q" placeholder="ex. riz basmati cuit" value="${esc(state.q)}"></label>
-        <label class="f" style="max-width:110px">Grammes<input name="g" inputmode="decimal" placeholder="g" value="${esc(state.g)}"></label>
-        <button class="btn" type="submit">Ajouter</button>
-      </form>
-      <div id="sugg" class="cal-sugg">${suggestions()}</div>`;
+    h = `<div class="sr-bar">${ico("search", 20)}<input id="sr-q" type="search" enterkeyhint="search" placeholder="Pain de mie, lasagne, riz…" value="${esc(state.q)}" aria-label="Chercher un aliment" autocomplete="off"></div>
+      <div id="sugg" class="cal-sugg">${suggestions()}</div>
+      <div class="sr-more"><button type="button" class="btn ghost sm" data-go-mode="free">Saisie manuelle (kcal connues)</button></div>`;
   }
   if(state.mode === "free"){
     const f = state.free || {};
-    h = `<form id="free" class="form-row" autocomplete="off">
+    h = `<button type="button" class="icon-btn" data-go-mode="search" style="margin:-4px 0 8px -8px">‹ Retour</button>
+      <form id="free" class="form-row" autocomplete="off">
         <label class="f" data-wide>Nom<input name="n" placeholder="ex. bol de pâtes maison" value="${esc(f.n || "")}" required></label>
         <label class="f">Grammes (si connus)<input name="g" inputmode="decimal" placeholder="vide = 1 portion" value="${esc(f.g || "")}"></label>
         <label class="f">Kcal<input name="k" inputmode="decimal" value="${esc(f.k || "")}" required></label>
         <label class="f">Protéines (g)<input name="p" inputmode="decimal" value="${esc(f.p || "")}"></label>
         <label class="f">Glucides (g)<input name="c" inputmode="decimal" value="${esc(f.c || "")}"></label>
         <label class="f">Lipides (g)<input name="l" inputmode="decimal" value="${esc(f.l || "")}"></label>
-        <label class="cal-chk" data-wide style="grid-column:1/-1"><input type="checkbox" name="keep"><span>Enregistrer dans mes aliments (retrouvable en Recherche)</span></label>
+        <label class="cal-chk" data-wide style="grid-column:1/-1"><input type="checkbox" name="keep" checked><span>Enregistrer dans mes aliments</span></label>
         <button class="btn" type="submit">Ajouter</button>
       </form>
       <p class="muted cal-hint">Valeurs pour la quantité mangée, pas pour 100 g.</p>`;
@@ -646,7 +723,7 @@ function bindSheet(){
 }
 function bindDock(){
   const el = sheet, prod = $("#prod", el), pr = state.scan.product;
-  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: pr.n || "" }; closeSheet(); state.scan = null; state.mode = "free"; render(); };
+  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: pr.n || "" }; closeSheet(); state.scan = null; if(!adEl) openAdd("free"); else setMode("free"); };
   if(!prod) return;
   const body = $(".yk-add-body", prod);
   const upd = from => {
@@ -664,7 +741,7 @@ function bindDock(){
   $$("[data-pm]", prod).forEach(b => b.onclick = () => {
     state.meal = b.dataset.pm;
     $$("[data-pm]", prod).forEach(x => x.setAttribute("aria-pressed", x === b));
-    $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x.dataset.meal === state.meal));
+    syncAddHead();
   });
   prod.onsubmit = e => {
     e.preventDefault();
@@ -760,63 +837,106 @@ function photoBlock(){
   </div>`;
 }
 
-function histRow(h, i){
-  const g = h.g, q = forQty(h, g);
-  return `<div class="cal-hist"><button type="button" class="cal-opt" data-pick="${i}"><span>${esc(h.n)}</span><small>${h.cnt > 1 ? `Déjà mangé ${h.cnt} fois` : "Déjà mangé"} · ${h.days === 0 ? "aujourd'hui" : h.days === 1 ? "hier" : `il y a ${h.days} j`} · ${fmt(h.k)} kcal/100 ${h.u === "ml" ? "ml" : "g"}</small></button>
-    <button type="button" class="cal-plus" data-quick="${i}" aria-label="Ajouter ${esc(portionTxt(h, g))} de ${esc(h.n)}"><b>+ ${esc(portionTxt(h, g).split(" · ")[0])}</b><small>${fmt(q.kcal)} kcal</small></button></div>`;
+const unitOf = f => f.u === "ml" || f.unit === "ml" ? "ml" : "g";
+function srRow(f, i){
+  const open = state.open === i, u = unitOf(f);
+  const sub = f.hist ? `${f.cnt > 1 ? `Mangé ${f.cnt} fois` : "Déjà mangé"} · ${f.days === 0 ? "aujourd'hui" : f.days === 1 ? "hier" : `il y a ${f.days} j`}`
+    : `${fmt(f.k)} kcal · ${dec(f.p)} g prot. / 100 ${u}${f.src === "perso" ? " · enregistré" : ""}`;
+  const quick = f.hist ? `<button type="button" class="cal-plus" data-quick="${i}" aria-label="Ajouter ${esc(portionTxt(f, f.g))} de ${esc(f.n)}"><b>+ ${esc(portionTxt(f, f.g).split(" · ")[0])}</b><small>${fmt(forQty(f, f.g).kcal)} kcal</small></button>`
+    : `<button type="button" class="cal-plus add" data-pick="${i}" aria-label="Choisir la quantité de ${esc(f.n)}"><b>+</b></button>`;
+  return `<div class="sr-row${open ? " open" : ""}"><button type="button" class="sr-main" data-pick="${i}" aria-expanded="${open}"><span>${esc(f.n)}</span><small>${sub}</small></button>${quick}${open ? qtyPanel(f, i) : ""}</div>`;
+}
+function qtyPanel(f, i){
+  const u = unitOf(f), g0 = num(state.g) || (f.hist ? f.g : f.sv || 100);
+  const chips = f.sv ? [1, 2, 3].map(k => [rq(f.sv * k), `${k} ${plural(f.svn || "portion", k)}`]) : (u === "ml" ? [[200, "200 ml"], [250, "250 ml"], [330, "330 ml"], [500, "500 ml"]] : [[50, "50 g"], [100, "100 g"], [150, "150 g"], [200, "200 g"]]);
+  return `<div class="sr-qty">
+    <div class="chips">${chips.map(([g, l]) => `<button type="button" class="chip" data-gq="${g}" aria-pressed="${rq(g) === rq(g0)}">${esc(l)}${f.sv ? ` · ${fq(g)} ${u}` : ""}</button>`).join("")}</div>
+    <div class="sr-qrow"><label class="f">Quantité (${u})<input id="sr-g" inputmode="decimal" value="${fq(g0)}"></label>
+    <button class="btn green" type="button" data-sradd="${i}">Ajouter <span id="sr-k">${fmt(forQty(f, g0).kcal)}</span> kcal</button></div>
+  </div>`;
 }
 function suggestions(){
   const q = norm(state.q);
   if(state.busy === "food") return `<p class="muted cal-hint">Gemini estime « ${esc(state.q)} »…</p>`;
-  if(state.pick){
-    const p = state.pick, u = p.u === "ml" ? "ml" : "g";
-    const por = p.sv ? `<div class="chips cal-por">${[1, 2, 3].map(k => `<button type="button" class="chip" data-gq="${rq(p.sv * k)}">${k} ${esc(plural(p.svn || "portion", k))} · ${fq(p.sv * k)} ${u}</button>`).join("")}</div>` : "";
-    return `<p class="muted cal-hint">Sélectionné : <b>${esc(p.n)}</b> · ${fmt(p.k)} kcal, ${dec(p.p)} g prot. pour 100 ${u}${p.src === "gemini" && !p.hist ? " (estimation Gemini)" : ""}.${p.hist ? ` Dernière fois : ${esc(portionTxt(p, p.g))}.` : ""} Indique les ${u === "ml" ? "ml" : "grammes"} puis Ajouter.</p>${por}`;
-  }
   const H = history();
   if(q.length < 2){
-    const top = H.slice(0, 12); state.list = top;
-    return top.length ? `<h4 class="cal-sub">Tes habituels${state.meal ? " · " + MEALS.find(m => m[0] === state.meal)[1].toLowerCase() + " en tête" : ""}</h4>${top.map(histRow).join("")}
-      <p class="muted cal-hint">« + » ajoute la même quantité que la dernière fois. Touche le nom pour changer la quantité.</p>`
-      : `<p class="muted cal-hint">Tape au moins 2 lettres : ${(window.PDM_FOODS || []).length} aliments de base + tes aliments enregistrés. Ce que tu ajoutes apparaîtra ici en premier la prochaine fois.</p>`;
+    state.list = H.slice(0, 15);
+    return state.list.length ? `<h4 class="cal-sub">Tes habituels · ${esc(mealName(state.meal).toLowerCase())} en tête</h4>${state.list.map(srRow).join("")}
+      <p class="muted cal-hint">« + » remet la même quantité que la dernière fois. Touche le nom pour la changer.</p>`
+      : `<p class="muted cal-hint">${(window.PDM_FOODS || []).length} aliments de base + tes produits. Ce que tu ajoutes apparaîtra ici en premier la prochaine fois.</p>`;
   }
   const ok = matcher(state.q);
   const hh = H.filter(h => ok(h.n)).slice(0, 15);
   const seen = new Set(hh.map(h => norm(h.n)));
-  const rest = allFoods().filter(f => !seen.has(norm(f.n)) && ok(f.n)).slice(0, 10);
+  const rest = allFoods().filter(f => !seen.has(norm(f.n)) && ok(f.n)).slice(0, 12);
   state.list = [...hh, ...rest];
-  return `${hh.length ? `<h4 class="cal-sub">Déjà mangé</h4>${hh.map(histRow).join("")}${rest.length ? `<h4 class="cal-sub">Autres aliments</h4>` : ""}` : ""}
-    ${rest.map((f, j) => `<button type="button" class="cal-opt" data-pick="${hh.length + j}"><span>${esc(f.n)}</span><small>${fmt(f.k)} kcal · ${dec(f.p)} g prot. /100 g${f.src === "perso" ? " · perso" : ""}</small></button>`).join("")}
+  return `${hh.length ? `<h4 class="cal-sub">Déjà mangé</h4>${hh.map(srRow).join("")}` : ""}
+    ${rest.length ? `<h4 class="cal-sub">${hh.length ? "Autres aliments" : "Aliments"}</h4>${rest.map((f, j) => srRow(f, hh.length + j)).join("")}` : ""}
     <button type="button" class="cal-opt ai" data-act="ask"><span>${hh.length || rest.length ? "Pas le bon ? " : "Introuvable : "}estimer « ${esc(state.q.trim())} » avec Gemini</span><small>valeurs pour 100 g, enregistrées pour la prochaine fois</small></button>`;
 }
 
+const qtyTxt = it => it.por ? "1 portion" : portionTxt(it, it.g);
+const srcTag = it => ({ photo: " · photo", off: " · code-barres", chat: " · écrit", gemini: " · Gemini" })[it.src] || "";
 function renderDay(){
-  const day = D.meals[state.date] || [];
-  $("#h-day").textContent = state.date === todayISO() ? "Aujourd'hui" : fmtDate(state.date);
-  $("#day").innerHTML = day.length ? MEALS.map(([k,l]) => mealBlock(k, l, day.filter(it => (it.m || "dej") === k))).join("") : `<p class="empty">Ajoute une photo, un code-barres ou un aliment.</p>`;
+  const day = D.meals[state.date] || [], y = D.meals[shiftDate(state.date, -1)] || [];
+  $("#day").innerHTML = MEALS.map(([k, l]) => {
+    const items = day.filter(it => (it.m || "dej") === k), t = sum(items);
+    const prev = items.length ? [] : y.filter(it => (it.m || "dej") === k);
+    return `<section class="panel cd-meal" aria-label="${l}">
+      <header><div><h3>${l}</h3>${items.length ? `<span>${fmt(t.kcal)} kcal · ${fmt(t.p)} g prot.</span>` : ""}</div>
+        <button type="button" class="cd-plus" data-add-meal="${k}" aria-label="Ajouter au ${esc(l.toLowerCase())}">+</button></header>
+      ${items.length ? `<ul class="cd-items">${items.map(it => `<li><button type="button" class="cd-row" data-it="${it.id}"><span>${esc(it.n)}<small>${esc(qtyTxt(it))}${srcTag(it)}</small></span><b>${fmt(forQty(it).kcal)}</b></button></li>`).join("")}</ul>`
+        : prev.length ? `<button type="button" class="cd-copy" data-copy="${k}"><span>Comme hier</span><small>${esc(prev.map(x => x.n.split(" · ")[0]).slice(0, 3).join(", "))}${prev.length > 3 ? "…" : ""} · ${fmt(sum(prev).kcal)} kcal</small></button>` : ""}
+    </section>`;
+  }).join("");
 }
-function mealBlock(k, label, items){
-  if(!items.length) return "";
-  const t = sum(items);
-  return `<div class="cal-meal"><div class="cal-meal-h"><h3>${label}</h3><span class="muted">${fmt(t.kcal)} kcal · ${fmt(t.p)} g prot.</span></div>
-    <ul class="cal-items">${items.map(it => state.edit === it.id ? editRow(it) : `<li class="row" data-it="${it.id}">
-      <span class="cal-name">${esc(it.n)}<small class="muted">${qtyLabel(it)} · P ${fmt(forQty(it).p)} · G ${fmt(forQty(it).c)} · L ${fmt(forQty(it).l)}${it.src === "photo" ? " · photo" : it.src === "off" ? " · code-barres" : ""}</small></span>
-      <b>${fmt(forQty(it).kcal)}</b>
-      <span class="cal-acts"><button class="icon-btn" data-act="edit-it" aria-label="Modifier ${esc(it.n)}">Modifier</button><button class="icon-btn danger" data-act="del-it" aria-label="Supprimer ${esc(it.n)}">×</button></span></li>`).join("")}</ul></div>`;
-}
-function editRow(it){
-  const q = forQty(it);
-  return `<li class="cal-edit" data-it="${it.id}"><form class="form-row" data-edit>
-    <label class="f" data-wide>Nom<input name="n" value="${esc(it.n)}"></label>
-    <label class="f">Repas<select name="m">${MEALS.map(([k,l]) => `<option value="${k}"${k === (it.m || "dej") ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-    ${it.por ? "" : `<label class="f">Grammes<input name="g" inputmode="decimal" value="${r1(it.g)}"></label>`}
-    <label class="f">Kcal<input name="k" inputmode="decimal" value="${r0(q.kcal)}"></label>
-    <label class="f">Protéines<input name="p" inputmode="decimal" value="${r1(q.p)}"></label>
-    <label class="f">Glucides<input name="c" inputmode="decimal" value="${r1(q.c)}"></label>
-    <label class="f">Lipides<input name="l" inputmode="decimal" value="${r1(q.l)}"></label>
-    <button class="btn" type="submit">Enregistrer</button>
-    <button class="btn ghost" type="button" data-act="edit-cancel">Annuler</button>
-  </form><p class="muted cal-hint" style="margin:6px 0 0">${it.por ? "" : "Changer les grammes recalcule les valeurs. "}Les valeurs sont pour la quantité mangée.</p></li>`;
+function openEdit(id){
+  const it = (D.meals[state.date] || []).find(x => x.id === id); if(!it) return;
+  const u = unitOf(it), q = forQty(it);
+  const chips = it.sv ? [1, 2, 3].map(k => [rq(it.sv * k), `${k} ${plural(it.svn || "portion", k)}`]) : [];
+  const el = sheetOpen("ed", `
+    <header class="ad-head"><div class="ad-grab" aria-hidden="true"><i></i></div>
+      <div class="ad-top"><h2>Modifier</h2><button class="ad-x" type="button" data-adclose aria-label="Fermer">×</button></div></header>
+    <form class="ad-body ed-form" autocomplete="off">
+      <label class="f">Aliment<input name="n" value="${esc(it.n)}"></label>
+      <div class="ad-meals" role="group" aria-label="Repas">${MEALS.map(([k, l]) => `<button type="button" data-em="${k}" aria-pressed="${k === (it.m || "dej")}">${l}</button>`).join("")}</div>
+      ${it.por ? "" : `<label class="f">Quantité (${u})<input name="g" inputmode="decimal" value="${fq(it.g)}"></label>
+        ${chips.length ? `<div class="chips">${chips.map(([g, l]) => `<button type="button" class="chip" data-eg="${g}">${esc(l)} · ${fq(g)} ${u}</button>`).join("")}</div>` : ""}`}
+      <div class="ed-grid">
+        <label class="f">Kcal<input name="k" inputmode="decimal" value="${r0(q.kcal)}"></label>
+        <label class="f">Prot. g<input name="p" inputmode="decimal" value="${dec(q.p)}"></label>
+        <label class="f">Gluc. g<input name="c" inputmode="decimal" value="${dec(q.c)}"></label>
+        <label class="f">Lip. g<input name="l" inputmode="decimal" value="${dec(q.l)}"></label>
+      </div>
+      <p class="muted cal-hint" style="margin:0">Valeurs pour la quantité mangée. Changer la quantité les recalcule.</p>
+      <div class="ed-btns"><button class="btn" type="submit">Enregistrer</button><button class="btn ghost danger" type="button" data-del>Supprimer</button></div>
+    </form>`, "Modifier " + it.n);
+  const f = $("form", el), close = () => sheetClose(el);
+  let meal = it.m || "dej";
+  el.addEventListener("adclose", close);
+  const fill = g => { const x = forQty(it, g); f.k.value = r0(x.kcal); f.p.value = dec(x.p); f.c.value = dec(x.c); f.l.value = dec(x.l); };
+  el.addEventListener("click", e => {
+    if(e.target.closest("[data-adclose]")){ close(); return; }
+    const em = e.target.closest("[data-em]"); if(em){ meal = em.dataset.em; $$("[data-em]", el).forEach(b => b.setAttribute("aria-pressed", b === em)); return; }
+    const eg = e.target.closest("[data-eg]"); if(eg){ f.g.value = fq(+eg.dataset.eg); fill(+eg.dataset.eg); return; }
+    if(e.target.closest("[data-del]")){
+      D.meals[state.date] = (D.meals[state.date] || []).filter(x => x !== it);
+      if(!D.meals[state.date].length) delete D.meals[state.date];
+      P.save(`${it.n} supprimé`); refreshData(); close();
+    }
+  });
+  if(f.g) f.g.oninput = () => { const g = num(f.g.value); if(g > 0) fill(g); };
+  f.onsubmit = e => {
+    e.preventDefault();
+    const g = it.por ? it.g : num(f.g.value), k = num(f.k.value);
+    if(!g || g <= 0 || k == null || k < 0){ toast("Quantité ou kcal invalides"); return; }
+    const vals = { k, p: num(f.p.value) || 0, c: num(f.c.value) || 0, l: num(f.l.value) || 0 }, auto = forQty(it, g);
+    /* valeurs tapées à la main : elles font foi ; sinon on garde les valeurs pour 100 g */
+    if(r0(vals.k) !== r0(auto.kcal) || r1(vals.p) !== r1(auto.p) || r1(vals.c) !== r1(auto.c) || r1(vals.l) !== r1(auto.l)){
+      it.k = r1(vals.k / g * 100); it.p = r1(vals.p / g * 100); it.c = r1(vals.c / g * 100); it.l = r1(vals.l / g * 100); }
+    it.g = g; it.n = f.n.value.trim() || it.n; it.m = meal;
+    P.save("Modifié"); refreshData(); close();
+  };
 }
 
 function renderWeek(){
@@ -839,7 +959,11 @@ function refreshData(){ renderTotals(); renderDay(); renderWeek(); renderFoods()
 /* ---------- actions ---------- */
 function addItems(items){
   (D.meals[state.date] = D.meals[state.date] || []).push(...items);
-  P.save(items.length > 1 ? `${items.length} aliments ajoutés` : `${items[0].n} ajouté`);
+  if(state.session){ /* dans la feuille : le compteur en haut remplace le toast */
+    P.save(); state.session.n += items.length; state.session.kcal += sum(items).kcal; syncAddHead();
+    const c = adEl && $("#ad-count", adEl); if(c){ c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash"); }
+    if(navigator.vibrate) navigator.vibrate(20);
+  } else P.save(items.length > 1 ? `${items.length} aliments ajoutés` : `${items[0].n.split(" · ")[0]} ajouté`);
   refreshData();
 }
 const item = (food, g, src) => { const it = { id: uid("m"), n: food.n, g, k: r1(food.k), p: r1(food.p), c: r1(food.c), l: r1(food.l), m: state.meal, src };
@@ -898,56 +1022,41 @@ function near(a, b){
 function matcher(q){
   const words = norm(q).split(/[\s,.'’·-]+/).filter(Boolean);
   return name => { const n = norm(name), toks = n.split(/[\s,.'’·()-]+/).filter(Boolean);
-    return words.every(w => n.includes(w) || (w.length >= 4 && toks.some(t => near(w, t) || (t.length > w.length && near(w, t.slice(0, w.length)))))); };
+    return words.every(w => toks.some(t => t.startsWith(w)) || (w.length >= 5 && n.includes(w)) || (w.length >= 5 && toks.some(t => near(w, t) || (t.length > w.length && near(w, t.slice(0, w.length)))))); };
 }
 
+const mealNow = () => state.date === todayISO() ? defaultMeal() : state.meal;
 function bindStatic(){
-  $("#cal-day").onchange = e => { if(e.target.value){ state.date = e.target.value; state.edit = null; refreshData(); } };
-  $$("[data-meal]", root).forEach(b => b.onclick = () => { state.meal = b.dataset.meal; $$("[data-meal]", root).forEach(x => x.setAttribute("aria-pressed", x === b));
-    const sg = $("#sugg"); if(sg && !state.pick) sg.innerHTML = suggestions(); });
-  $$("[data-mode]", root).forEach(b => b.onclick = () => {
-    state.mode = b.dataset.mode; try { localStorage.setItem("pdm-cal-mode", state.mode); } catch(e){}
-    $$("[data-mode]", root).forEach(x => x.setAttribute("aria-selected", x === b)); renderAdd();
-  });
+  $("#cal-day").onchange = e => { if(e.target.value){ state.date = e.target.value; render(); } };
   $("#goals").onsubmit = e => {
     e.preventDefault(); const c = e.target;
     const kmin = num(c.kmin.value), kmax = num(c.kmax.value), pmin = num(c.pmin.value);
     if(!(kmin && kmax && kmax >= kmin && pmin)){ toast("Objectifs invalides"); return; }
     D.calTargets = { kcalMin: kmin, kcalMax: kmax, protMin: pmin }; P.save("Objectifs enregistrés"); refreshData();
   };
+  const qp = $("[data-qphoto]", root);
+  qp.onchange = e => { const file = e.target.files[0]; e.target.value = ""; if(!file) return; openAdd("photo", mealNow()); handlePhoto(file); };
   root.onclick = e => {
-    const go = e.target.closest("[data-go]"); if(go){ state.date = go.dataset.go; state.edit = null; render(); return; }
+    const go = e.target.closest("[data-go]"); if(go){ state.date = go.dataset.go; render(); return; }
+    const op = e.target.closest("[data-open]");
+    if(op){ const m = op.dataset.open; openAdd(m, mealNow());
+      if(m === "scan") startCamera();
+      if(m === "chat"){ const t = $("#ch-form textarea"); t && t.focus(); }
+      if(m === "search"){ const i = $("#sr-q"); i && i.focus(); }
+      return; }
+    const am = e.target.closest("[data-add-meal]"); if(am){ openAdd(null, am.dataset.addMeal); return; }
+    const row = e.target.closest("[data-it]"); if(row){ openEdit(row.dataset.it); return; }
+    const cp = e.target.closest("[data-copy]");
+    if(cp){ const k = cp.dataset.copy, prev = (D.meals[shiftDate(state.date, -1)] || []).filter(x => (x.m || "dej") === k);
+      if(prev.length) addItems(prev.map(x => ({ ...x, id: uid("m"), m: k }))); return; }
     const b = e.target.closest("[data-act]"); if(!b) return;
-    const a = b.dataset.act, li = b.closest("[data-it]");
-    const it = li ? (D.meals[state.date] || []).find(x => x.id === li.dataset.it) : null;
-    if(a === "day"){ state.date = shiftDate(state.date, +b.dataset.d); state.edit = null; render(); }
-    if(a === "today"){ state.date = todayISO(); state.edit = null; render(); }
-    if(a === "edit-it"){ state.edit = it.id; renderDay(); const f = $(`[data-it="${it.id}"] input`); f && f.focus(); }
-    if(a === "edit-cancel"){ state.edit = null; renderDay(); }
-    if(a === "del-it" && it && confirm(`Supprimer ${it.n} ?`)){
-      D.meals[state.date] = D.meals[state.date].filter(x => x !== it);
-      if(!D.meals[state.date].length) delete D.meals[state.date];
-      P.save("Supprimé"); refreshData();
-    }
+    const a = b.dataset.act;
+    if(a === "day"){ state.date = shiftDate(state.date, +b.dataset.d); render(); }
+    if(a === "today"){ state.date = todayISO(); render(); }
     if(a === "del-food"){
       const fd = D.customFoods[+b.dataset.i];
       if(confirm(`Retirer « ${fd.n} » de tes aliments enregistrés ?`)){ D.customFoods.splice(+b.dataset.i, 1); P.save("Aliment retiré"); renderFoods(); }
     }
-  };
-  root.onsubmit = e => {
-    const f = e.target; if(!f.hasAttribute("data-edit")) return;
-    e.preventDefault();
-    const it = (D.meals[state.date] || []).find(x => x.id === f.closest("[data-it]").dataset.it); if(!it) return;
-    const g = it.por ? 100 : num(f.g.value), k = num(f.k.value);
-    if(!g || g <= 0 || k == null || k < 0){ toast("Grammes ou kcal invalides"); return; }
-    const old = forQty(it), changedG = !it.por && g !== it.g;
-    const vals = { k, p: num(f.p.value) || 0, c: num(f.c.value) || 0, l: num(f.l.value) || 0 };
-    /* si seuls les grammes changent, on garde la valeur pour 100 g ; sinon les valeurs saisies font foi */
-    const valsChanged = r0(vals.k) !== r0(old.kcal) || r1(vals.p) !== r1(old.p) || r1(vals.c) !== r1(old.c) || r1(vals.l) !== r1(old.l);
-    if(valsChanged){ it.k = r1(vals.k / g * 100); it.p = r1(vals.p / g * 100); it.c = r1(vals.c / g * 100); it.l = r1(vals.l / g * 100); }
-    if(changedG) it.g = g;
-    it.n = f.n.value.trim() || it.n; it.m = f.m.value;
-    state.edit = null; P.save("Modifié"); refreshData();
   };
 }
 
@@ -969,15 +1078,163 @@ async function runPhoto(text, retryEmpty){
   ph.questions = qOf(res);
 }
 
+async function handlePhoto(file){
+  if(state.busy === "photo") return;
+  let img; try { img = await shrink(file); } catch(err){ toast(err.message); return; }
+  state.photo = { url: img.url, b64: img.b64, items: null, round: 1 }; state.busy = "photo"; renderAdd();
+  try{ await runPhoto(PROMPT_PHOTO, true); }catch(err){ state.photo.err = err.message; }
+  state.busy = false; renderAdd();
+}
+
+/* ---------- chat : « j'ai mangé… » ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SCHEMA_CHAT = { type: "OBJECT", properties: {
+  reponse: STR,
+  aliments: { type: "ARRAY", items: { type: "OBJECT", properties: { nom: STR, quantite: STR, grammes: NUM, kcal: NUM, proteines: NUM, glucides: NUM, lipides: NUM, ref: STR,
+    repas: { type: "STRING", enum: ["auto", "pdj", "dej", "col", "din"] } }, required: ["nom", "quantite", "grammes", "kcal", "proteines", "glucides", "lipides", "ref", "repas"] } },
+  questions: { type: "ARRAY", items: STR } }, required: ["reponse", "aliments", "questions"] };
+const PROMPT_CHAT = (msg, refs, pend) => `Tu es l'assistant nutrition de Thomas, en prise de masse. Il t'écrit ce qu'il a mangé ou bu, en langage courant (fautes de frappe ou dictée vocale possibles).
+Transforme son message en liste d'aliments : quantité réellement consommée en grammes (en ml pour les boissons, toujours dans « grammes ») et valeurs nutritionnelles POUR CETTE QUANTITÉ.
+
+Règles :
+1. Aliments de référence ci-dessous (ses produits scannés, ce qu'il mange souvent, la base) : si un aliment du message y correspond, même mal orthographié ou sans la marque, mets son nom EXACT dans « ref » et calcule avec ses valeurs pour 100 g. Une portion indiquée (ex. 1 tranche = 44 g) donne les grammes. Sinon « ref » = "" et estime avec la table Ciqual ; en cas de doute prends l'estimation basse.
+2. Quantité non précisée : reprends « dernière fois » si l'aliment est connu, sinon une portion standard française, et précise-le dans « quantite ».
+3. « quantite » : texte court lisible, ex. « 2 œufs », « 1 tranche », « 1 bol (250 ml) », « 1 assiette (~300 g) ».
+4. « repas » : pdj, dej, col ou din si le message le précise (ce matin, à midi, au goûter, ce soir…), sinon "auto".
+5. Un plat composé peut tenir en une ligne (ex. « lasagnes maison ») ; sépare ce qui est servi à part (pain, boisson, dessert, sauce ajoutée).
+6. « questions » : uniquement si un détail inconnu change le total de plus de 100 kcal (quantité d'huile, taille de l'assiette…) ; 2 au maximum ; donne quand même ta meilleure estimation.
+7. « reponse » : une phrase courte en français, en tutoyant, sans recopier la liste.
+8. Si le message n'est pas un repas (question, salut…), « aliments » vide et réponds brièvement.
+${pend ? `
+Proposition en attente (pas encore ajoutée) :
+${JSON.stringify(pend.items.map(x => ({ nom: x.n, quantite: x.qty, grammes: x.g, repas: x.auto ? "auto" : x.m })))}
+Le nouveau message la corrige ou la complète : renvoie la liste COMPLÈTE mise à jour (aliments gardés, corrigés, ajoutés ; retire ceux qu'il enlève).
+` : ""}
+Repas choisi dans l'appli : ${mealName(state.meal)}. Heure : ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.
+Aliments de référence :
+${refs}
+
+Message de Thomas : « ${msg} »`;
+const STOP = new Set(("j ai jai mange manger mangee pris prise bu boire bois avec et de d du des la le les l un une deux trois quatre cinq au aux a en ce cet cette ces matin midi soir aujourd hui hier petit dej petitdej dejeuner diner gouter collation puis plus aussi environ genre moitie demi "
+  + "tranche tranches portion portions bol bols verre verres cuillere cuilleres cuill cs cc assiette assiettes paquet sachet pot boite canette bouteille morceau morceaux part parts g gr grammes gramme ml cl l kg litre litres fois avoir pour sur sans mon ma mes").split(" "));
+function refsFor(text){
+  const H = history(), cf = D.customFoods.map(f => ({ ...f, src: "perso" })), base = (window.PDM_FOODS || []).map(([n, k, p, c, l]) => ({ n, k, p, c, l, src: "base" }));
+  const segs = norm(text).split(/[,;+\n]|\bet\b|\bavec\b|\bpuis\b/).map(sg => sg.split(/[\s'’]+/).map(w => w.replace(/[^a-z0-9-]/g, ""))
+    .filter(w => w && !STOP.has(w) && !/^\d/.test(w)).map(w => w.length > 3 ? w.replace(/[sx]$/, "") : w)).filter(ws => ws.length);
+  const out = new Map(), put = f => { const k = norm(f.n); if(!out.has(k) && out.size < 32) out.set(k, f); };
+  for(const ws of segs){
+    const ok = matcher(ws.join(" "));
+    let hits = [...H.filter(h => ok(h.n)).slice(0, 3), ...cf.filter(f => ok(f.n)).slice(0, 2), ...base.filter(f => ok(f.n)).slice(0, 3)];
+    if(!hits.length){ const w = ws.slice().sort((a, b) => b.length - a.length)[0], ok2 = matcher(w);
+      hits = [...H.filter(h => ok2(h.n)).slice(0, 2), ...cf.filter(f => ok2(f.n)).slice(0, 2), ...base.filter(f => ok2(f.n)).slice(0, 3)]; }
+    hits.forEach(put);
+  }
+  H.slice(0, 8).forEach(put); /* ses habituels, pour « comme d'hab » */
+  const lines = [...out.values()].map(f => { const u = unitOf(f);
+    return `- « ${f.n} » : ${fmt(f.k)} kcal, P ${dec(f.p)}, G ${dec(f.c)}, L ${dec(f.l)} pour 100 ${u}${f.sv ? ` ; 1 ${f.svn || "portion"} = ${fq(f.sv)} ${u}` : ""}${f.hist ? ` ; dernière fois ${portionTxt(f, f.g)}${f.cnt > 1 ? ` (${f.cnt} fois)` : ""}` : ""}`; });
+  return { txt: lines.join("\n") || "(aucun)", map: out };
+}
+function chatItem(a, map){
+  const ref = a.ref && (map.get(norm(a.ref)) || [...map.values()].find(f => norm(f.n).includes(norm(a.ref)) || norm(a.ref).includes(norm(f.n))));
+  const g = +a.grammes, per = v => (+v || 0) / g * 100;
+  const it = { n: ref ? ref.n : a.nom, g: rq(g), qty: a.quantite || "", ref: !!ref, on: true, src: "chat",
+    k: r1(ref ? ref.k : per(a.kcal)), p: r1(ref ? ref.p : per(a.proteines)), c: r1(ref ? ref.c : per(a.glucides)), l: r1(ref ? ref.l : per(a.lipides)),
+    auto: !MEALS.some(m => m[0] === a.repas), m: MEALS.some(m => m[0] === a.repas) ? a.repas : state.meal };
+  if(ref){ if(ref.code) it.code = ref.code; if(ref.sv){ it.sv = ref.sv; it.svn = ref.svn; } if(unitOf(ref) === "ml") it.u = "ml"; }
+  return it;
+}
+const chatOn = m => (m.items || []).filter(x => x.on && x.g > 0);
+function chatMsg(m, i){
+  if(m.role === "me") return `<div class="ch-msg me">${esc(m.text)}</div>`;
+  const items = m.items || [], tot = sum(chatOn(m)), live = items.length && !m.added && !m.stale, dis = live ? "" : " disabled";
+  const meals = [...new Set(chatOn(m).map(x => x.auto ? state.meal : x.m))];
+  return `<div class="ch-msg bot${m.stale ? " stale" : ""}" data-cm="${i}">
+    ${m.err ? `<p class="ch-err">${esc(m.err)}</p>` : ""}
+    ${m.text ? `<p>${esc(m.text)}</p>` : ""}
+    ${items.length ? `<ul class="ch-items">${items.map((x, j) => `<li class="${x.on ? "" : "off"}">
+      <label class="cal-chk"><input type="checkbox" data-con="${j}"${x.on ? " checked" : ""}${dis}><span>${esc(x.n)}<small>${esc(x.qty)}${x.ref ? " · d'après ta fiche" : ""}${!x.auto && x.m !== state.meal ? " · " + esc(mealName(x.m).toLowerCase()) : ""}</small></span></label>
+      <span class="ch-g"><input class="cal-g" data-cg="${j}" inputmode="decimal" value="${fq(x.g)}" aria-label="Quantité de ${esc(x.n)}"${dis}><small>${unitOf(x)}</small></span>
+      <b>${fmt(forQty(x).kcal)}</b></li>`).join("")}</ul>
+      <p class="ch-tot">${fmt(tot.kcal)} kcal · ${fmt(tot.p)} g prot. · ${fmt(tot.c)} g gluc. · ${fmt(tot.l)} g lip.</p>` : ""}
+    ${m.questions && m.questions.length && live ? `<ul class="ch-qs">${m.questions.map(q => `<li>${esc(q)}</li>`).join("")}</ul><p class="muted ch-note">Réponds en dessous, ou ajoute tel quel.</p>` : ""}
+    ${items.length ? (m.added ? `<p class="ch-ok">✓ ${esc(m.added)}</p>` : m.stale ? `<p class="muted ch-note">Remplacé par la version corrigée.</p>`
+      : `<button class="btn green ch-add" type="button" data-cadd="${i}">Ajouter ${fmt(tot.kcal)} kcal${meals.length === 1 ? " · " + esc(mealName(meals[0]).toLowerCase()) : ""}</button>`) : ""}
+  </div>`;
+}
+function chatHtml(note){
+  const c = state.chat;
+  return `${note}<div class="ch-log" aria-live="polite">
+    ${c.msgs.length ? "" : `<div class="ch-msg bot"><p>Dis-moi ce que tu as mangé, comme tu l'écrirais à un pote.</p><p class="muted ch-note">Ex. « 2 œufs au plat, une tranche de pain de mie Harrys et un café au lait ». Je reprends tes produits scannés et tes quantités habituelles. Tu peux corriger : « non, 3 œufs ».</p></div>`}
+    ${c.msgs.map(chatMsg).join("")}
+    ${c.busy ? `<div class="ch-msg bot ch-typing" aria-label="Gemini écrit"><i></i><i></i><i></i></div>` : ""}
+  </div>
+  <form class="ch-bar" id="ch-form" autocomplete="off">
+    <textarea name="t" rows="1" placeholder="J'ai mangé…" enterkeyhint="send" aria-label="Ce que tu as mangé">${esc(c.draft || "")}</textarea>
+    ${SR ? `<button type="button" class="ch-ico" data-mic aria-label="Dicter">${ico("mic", 20)}</button>` : ""}
+    <button class="ch-ico ch-send" type="submit" aria-label="Envoyer"${c.busy ? " disabled" : ""}>${ico("send", 20)}</button>
+  </form>`;
+}
+async function sendChat(text){
+  const c = state.chat; text = String(text || "").trim(); if(!text || c.busy) return;
+  c.msgs.push({ role: "me", text }); c.draft = ""; c.busy = true; renderAdd(); scrollAdd();
+  const pend = [...c.msgs].reverse().find(m => m.role === "bot" && (m.items || []).length && !m.added && !m.stale);
+  try{
+    const refs = refsFor(text + (pend ? ", " + pend.items.map(x => x.n).join(", ") : ""));
+    const r = await P.gemini({ parts: [{ text: PROMPT_CHAT(text, refs.txt, pend) }], schema: SCHEMA_CHAT, lite: true });
+    const items = (r.aliments || []).filter(a => a && +a.grammes > 0).map(a => chatItem(a, refs.map));
+    if(pend && items.length) pend.stale = true;
+    c.msgs.push({ role: "bot", text: r.reponse || (items.length ? "" : "Je n'ai pas trouvé d'aliment dans ton message."), items, questions: (r.questions || []).map(q => String(q || "").trim()).filter(Boolean).slice(0, 2) });
+  }catch(err){ c.msgs.push({ role: "bot", err: err.message }); }
+  c.busy = false; renderAdd(); scrollAdd();
+  const t = $("#ch-form textarea"); if(t && matchMedia("(hover:hover)").matches) t.focus();
+}
+function chatTotals(box, m){
+  const tot = sum(chatOn(m)), meals = [...new Set(chatOn(m).map(x => x.auto ? state.meal : x.m))];
+  const t = $(".ch-tot", box); if(t) t.textContent = `${fmt(tot.kcal)} kcal · ${fmt(tot.p)} g prot. · ${fmt(tot.c)} g gluc. · ${fmt(tot.l)} g lip.`;
+  const b = $("[data-cadd]", box); if(b) b.textContent = `Ajouter ${fmt(tot.kcal)} kcal${meals.length === 1 ? " · " + mealName(meals[0]).toLowerCase() : ""}`;
+}
+
 function bindAdd(){
   const el = $("#add");
-  $$("[data-photo]", el).forEach(inp => inp.onchange = async e => {
-    const file = e.target.files[0]; if(!file || state.busy === "photo") return;
-    let img; try { img = await shrink(file); } catch(err){ toast(err.message); return; }
-    state.photo = { url: img.url, b64: img.b64, items: null, round: 1 }; state.busy = "photo"; renderAdd();
-    try{ await runPhoto(PROMPT_PHOTO, true); }catch(err){ state.photo.err = err.message; }
-    state.busy = false; renderAdd();
-  });
+  $$("[data-go-mode]", el).forEach(b => b.onclick = () => setMode(b.dataset.goMode));
+
+  /* chat */
+  const cf = $("#ch-form", el);
+  if(cf){
+    const ta = cf.t, grow = () => { ta.style.height = "auto"; ta.style.height = Math.min(140, ta.scrollHeight + 2) + "px"; };
+    grow();
+    ta.oninput = () => { state.chat.draft = ta.value; grow(); };
+    ta.onkeydown = e => { if(e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); sendChat(ta.value); } };
+    cf.onsubmit = e => { e.preventDefault(); sendChat(ta.value); };
+    const mic = $("[data-mic]", cf);
+    if(mic) mic.onclick = () => {
+      if(mic.rec){ mic.rec.stop(); return; }
+      try{
+        const rec = new SR(), start = ta.value ? ta.value.replace(/\s*$/, " ") : "";
+        rec.lang = "fr-FR"; rec.interimResults = true; rec.continuous = false;
+        rec.onresult = e => { ta.value = start + [...e.results].map(x => x[0].transcript).join(""); state.chat.draft = ta.value; grow(); };
+        rec.onend = () => { mic.rec = null; mic.classList.remove("on"); };
+        rec.onerror = e => { if(e.error === "not-allowed") toast("Micro refusé : autorise-le pour ce site, ou utilise la dictée du clavier."); };
+        mic.rec = rec; mic.classList.add("on"); rec.start();
+      }catch(e){ toast("Dictée indisponible : utilise le micro du clavier."); }
+    };
+    $$(".ch-msg.bot[data-cm]", el).forEach(box => {
+      const m = state.chat.msgs[+box.dataset.cm];
+      $$("[data-con]", box).forEach(c => c.onchange = () => { m.items[+c.dataset.con].on = c.checked; c.closest("li").classList.toggle("off", !c.checked); chatTotals(box, m); });
+      $$("[data-cg]", box).forEach(inp => inp.oninput = () => { const v = num(inp.value), x = m.items[+inp.dataset.cg]; if(v != null && v >= 0){ x.g = v; inp.closest("li").querySelector("b").textContent = fmt(forQty(x).kcal); chatTotals(box, m); } });
+      const add = $("[data-cadd]", box);
+      if(add) add.onclick = () => {
+        const sel = chatOn(m); if(!sel.length){ toast("Rien de coché"); return; }
+        const items = sel.map(x => { const it = item(x, x.g, "chat"); it.m = x.auto ? state.meal : x.m; return it; });
+        const meals = [...new Set(items.map(x => x.m))];
+        m.added = `Ajouté${meals.length === 1 ? " au " + mealName(meals[0]).toLowerCase() : ""} · ${fmt(sum(items).kcal)} kcal`;
+        addItems(items); renderAdd(); scrollAdd();
+      };
+    });
+  }
+
+  /* photo */
+  $$("[data-photo]", el).forEach(inp => inp.onchange = e => { const file = e.target.files[0]; if(file) handlePhoto(file); });
   const phq = $("#phq", el);
   if(phq){
     phq.oninput = () => { const ph = state.photo; ph.answers = {}; [...new FormData(phq)].forEach(([k, v]) => ph.answers[k] = v); };
@@ -1011,49 +1268,46 @@ function bindAdd(){
   const cam = $("[data-act=cam]", el); if(cam) cam.onclick = startCamera;
   const bcp = $("#bc-photo"); if(bcp) bcp.onchange = e => { const f = e.target.files[0]; if(f) decodePhoto(f); };
   const bc = $("#bc"); if(bc) bc.onsubmit = e => { e.preventDefault(); lookup(bc.code.value); };
-  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: "" }; state.scan = null; state.mode = "free"; render(); };
+  const sf = $("[data-act=scan-free]", el); if(sf) sf.onclick = () => { state.free = { n: "" }; state.scan = null; setMode("free"); };
   const again = $("[data-act=scan-again]", el); if(again) again.onclick = () => { state.scan = null; renderAdd(); startCamera(); };
   const so = $("[data-act=sheet-open]", el); if(so) so.onclick = () => openSheet();
   $$("[data-fav]", el).forEach(b => b.onclick = () => lookup(b.dataset.fav));
 
   /* recherche */
-  const f = $("#food");
-  if(f){
-    f.q.oninput = () => { state.q = f.q.value; state.pick = null; $("#sugg").innerHTML = suggestions(); };
-    f.g.oninput = () => { state.g = f.g.value; };
-    $("#sugg").onclick = e => {
+  const q = $("#sr-q", el), sg = $("#sugg", el);
+  if(q){
+    q.oninput = () => { state.q = q.value; state.open = null; state.g = ""; sg.innerHTML = suggestions(); };
+    q.onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); q.blur(); } };
+    sg.onclick = e => {
       const qk = e.target.closest("[data-quick]");
       if(qk){ const h = state.list[+qk.dataset.quick]; if(!h) return;
-        addItems([item(h, h.g, h.src || "base")]); state.q = f.q.value = ""; state.pick = null; $("#sugg").innerHTML = suggestions(); return; }
+        addItems([item(h, h.g, h.src || "base")]); state.q = q.value = ""; state.open = null; sg.innerHTML = suggestions(); return; }
       const gq = e.target.closest("[data-gq]");
-      if(gq){ state.g = f.g.value = fq(+gq.dataset.gq); return; }
-      const o = e.target.closest("[data-pick]");
-      if(o){ state.pick = state.list[+o.dataset.pick]; if(!state.pick) return; state.q = f.q.value = state.pick.n;
-        if(state.pick.hist){ state.g = f.g.value = fq(state.pick.g); }
-        $("#sugg").innerHTML = suggestions(); f.g.focus(); return; }
+      if(gq){ const gi = $("#sr-g", sg); gi.value = fq(+gq.dataset.gq); gi.dispatchEvent(new Event("input", { bubbles: true })); return; }
+      const ad = e.target.closest("[data-sradd]");
+      if(ad){ const f = state.list[+ad.dataset.sradd], g = num($("#sr-g", sg).value);
+        if(!f) return; if(!g || g <= 0){ toast("Indique la quantité"); return; }
+        addItems([item(f, g, f.hist ? f.src || "base" : f.src === "gemini" ? "gemini" : "base")]);
+        state.q = q.value = ""; state.open = null; state.g = ""; sg.innerHTML = suggestions(); return; }
+      const pk = e.target.closest("[data-pick]");
+      if(pk){ const i = +pk.dataset.pick; state.open = state.open === i ? null : i; state.g = ""; sg.innerHTML = suggestions();
+        const row = $(".sr-row.open", sg); if(row) row.scrollIntoView({ block: "nearest", behavior: "smooth" }); return; }
       if(e.target.closest("[data-act=ask]")) ask();
     };
-    f.onsubmit = e => {
-      e.preventDefault();
-      const g = num(f.g.value);
-      const food = state.pick || allFoods().find(x => norm(x.n) === norm(f.q.value));
-      if(!food){ toast(f.q.value.trim() ? "Choisis un aliment dans la liste ou demande à Gemini" : "Tape un aliment"); return; }
-      if(!g || g <= 0){ f.g.focus(); toast("Indique les grammes"); return; }
-      addItems([item(food, g, food.hist ? food.src || "base" : food.src === "gemini" ? "gemini" : "base")]);
-      state.q = ""; state.g = ""; state.pick = null; renderAdd();
-    };
+    sg.oninput = e => { if(e.target.id !== "sr-g") return; state.g = e.target.value; const f = state.list[state.open], g = num(e.target.value);
+      if(f && g >= 0){ $("#sr-k", sg).textContent = fmt(forQty(f, g).kcal); $$("[data-gq]", sg).forEach(c => c.setAttribute("aria-pressed", rq(+c.dataset.gq) === rq(g))); } };
   }
   async function ask(){
-    const q = state.q.trim(); if(!q) return;
-    state.busy = "food"; $("#sugg").innerHTML = suggestions();
+    const text = state.q.trim(); if(!text) return;
+    state.busy = "food"; sg.innerHTML = suggestions();
     try{
-      const r = await P.gemini({ parts: [{ text: PROMPT_FOOD(q) }], schema: SCHEMA_FOOD, lite: true });
-      const food = { n: r.nom || q, k: r1(r.kcal), p: r1(r.proteines), c: r1(r.glucides), l: r1(r.lipides) };
+      const r = await P.gemini({ parts: [{ text: PROMPT_FOOD(text) }], schema: SCHEMA_FOOD, lite: true });
+      const food = { n: r.nom || text, k: r1(r.kcal), p: r1(r.proteines), c: r1(r.glucides), l: r1(r.lipides) };
       saveFood(food); P.save(); renderFoods();
-      state.pick = { ...food, src: "gemini" }; state.q = food.n;
+      state.q = food.n;
     }catch(err){ toast(err.message); }
     state.busy = false; renderAdd();
-    const ff = $("#food"); ff && ff.g.focus();
+    if(state.q){ const i = state.list.findIndex(f => norm(f.n) === norm(state.q)); if(i >= 0){ state.open = i; $("#sugg").innerHTML = suggestions(); } }
   }
 
   /* saisie libre */
@@ -1066,8 +1320,7 @@ function bindAdd(){
     const it = { id: uid("m"), n, g: base, k: r1(k / base * 100), p: r1(v(fr.p.value)), c: r1(v(fr.c.value)), l: r1(v(fr.l.value)), m: state.meal, src: "libre" };
     if(!(g && g > 0)) it.por = true;
     if(fr.keep.checked && !it.por) saveFood({ n, k: it.k, p: it.p, c: it.c, l: it.l });
-    if(fr.keep.checked && it.por) toast("Sans grammes, l'aliment n'est pas enregistré (pas de valeur pour 100 g)");
-    addItems([it]); state.free = null; renderAdd();
+    addItems([it]); state.free = null; setMode("search");
   };
 }
 

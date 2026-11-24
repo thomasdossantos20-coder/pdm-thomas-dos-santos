@@ -12,7 +12,7 @@ const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-const num = v => { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : null; };
+const num = v => { const n = parseFloat(String(v).replace(/[\s\u00a0\u202f]/g, "").replace(",", ".")); return isFinite(n) ? n : null; };
 const fmtKg = v => v == null ? "—" : (Math.round(v*10)/10).toLocaleString("fr-FR", {minimumFractionDigits:1, maximumFractionDigits:1});
 const fmtLoad = v => v == null ? "—" : v.toLocaleString("fr-FR", {maximumFractionDigits:2});
 const fmtDelta = d => d == null ? "—" : (d > 0 ? "+" : d < 0 ? "−" : "±") + fmtKg(Math.abs(d));
@@ -407,75 +407,119 @@ function gemStatus(){
   return { used, total: Object.values(used).reduce((a, b) => a + b, 0), blocked, list,
     reset: new Date(Date.now() + untilReset() - 60e3).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) };
 }
+/* journal des erreurs Gemini (30 dernières), lisible dans Réglages */
+const GLOG = "pdm-gemini-log";
+const logAdd = (m, what, msg) => { const l = jget(GLOG, []); l.unshift({ t: Date.now(), m, what, msg: String(msg || "").slice(0, 220) }); lsSet(GLOG, JSON.stringify(l.slice(0, 30))); };
+const GGOOD = "pdm-gemini-good"; /* dernier modèle qui a répondu (par type : photo/texte) */
+/* réflexion : les Gemini 3.x n'acceptent pas toujours thinkingBudget 0 ; « low » existe sur tous (3.8 n'a pas « minimal ») */
+const thinkFor = m => /^gemini-(3|flash)/.test(m) ? { thinkingLevel: "low" } : /^gemini-2\.5/.test(m) ? { thinkingBudget: 0 } : null;
 const NOTHINK_KO = new Set();
 async function gemini(o){
   const key = gemCfg.key;
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
+  const kind = o.lite ? "txt" : "img";
   let base = await modelList(key);
-  if(o.lite) base = [...base.filter(m => /lite/.test(m)), ...base.filter(m => !/lite/.test(m))]; /* textes simples : on garde les Flash pour les photos */
+  if(o.lite) base = [...base.filter(m => /lite/.test(m)), ...base.filter(m => !/lite/.test(m))]; /* textes : Flash-Lite d'abord, les Flash restent pour les photos */
+  const good = jget(GGOOD, {})[kind];
+  if(good && base.includes(good)) base = [good, ...base.filter(m => m !== good)];
   const all = [...new Set([gemCfg.model, ...base].filter(Boolean))], sk = skipGet(), now = Date.now();
-  const ok = all.filter(m => !(sk[m] && sk[m][0] > now));
-  let chain = ok;
+  let chain = all.filter(m => !(sk[m] && sk[m][0] > now));
   if(o.avoid && o.avoid.length){ const av = chain.filter(m => o.avoid.includes(m)); chain = [...chain.filter(m => !o.avoid.includes(m)), ...av]; }
-  if(!chain.length){
-    const st = gemStatus();
-    throw new Error(`Quota Gemini gratuit épuisé sur tous les modèles. Il revient à ${st.reset} (minuit en Californie).`);
+  if(!chain.length){ /* tout est en pause : on retente ceux qui ne sont pas bloqués pour la journée, le plus proche d'abord */
+    chain = all.filter(m => sk[m] && !/jour|gratuit|fermé/.test(sk[m][1])).sort((a, b) => sk[a][0] - sk[b][0]);
+    if(!chain.length) throw new Error(`Quota Gemini gratuit du jour épuisé sur tous les modèles. Il revient à ${gemStatus().reset}.`);
   }
   const gc = { temperature: o.temperature ?? 0.2 };
   if(o.schema){ gc.responseMimeType = "application/json"; gc.responseSchema = o.schema; }
   const body = { contents: o.history || [{ role: "user", parts: o.parts }], generationConfig: gc };
   if(o.system) body.systemInstruction = { parts: [{ text: o.system }] };
-  /* thinkingBudget: 0 = pas de « réflexion », réponse plus rapide ; si le modèle refuse ce réglage, on relance sans */
-  const withThink = JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: { thinkingBudget: 0 } } }), plain = JSON.stringify(body), fails = [];
-  let quotaDay = 0;
-  for(const [i, model] of chain.entries()){
-    let r, payload = NOTHINK_KO.has(model) ? plain : withThink;
-    const wait = i < chain.length - 1 ? 30000 : 50000;
+  const plain = JSON.stringify(body);
+  const payloadFor = m => { const t = thinkFor(m); return t && !NOTHINK_KO.has(m) ? JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: t } }) : plain; };
+  const img = !o.lite && (o.parts || []).some(p => p.inline_data);
+  const HEDGE = img ? 12000 : 8000, HARD = img ? 45000 : 30000; /* au bout de HEDGE sans réponse, un 2e modèle est lancé en parallèle */
+  const fails = []; let quotaDay = 0;
+
+  async function tryModel(model, ctl){
+    let payload = payloadFor(model);
     for(let attempt = 0; attempt < 2; attempt++){
-      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), wait);
+      let r;
       try{
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
           method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
-      }catch(e){ r = null; fails.push(`${shortName(model)} : ${e.name === "AbortError" ? "pas de réponse" : "réseau"}`); if(e.name === "AbortError") skipSet(model, 5*60e3, "pas de réponse"); }
-      clearTimeout(timer);
-      if(r && r.status === 400 && payload === withThink){
+      }catch(e){ return { fail: e.name === "AbortError" ? "abort" : "réseau", msg: e.message }; }
+      if(r.status === 400 && payload !== plain){
         const msg = await r.clone().json().then(j => (j.error && j.error.message) || "").catch(() => "");
         if(/think/i.test(msg)){ NOTHINK_KO.add(model); payload = plain; continue; }
       }
-      break;
-    }
-    if(!r) continue;
-    if(!r.ok){
-      let err = {}; try { err = (await r.json()).error || {}; } catch(e){}
-      const msg = err.message || "";
-      if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) throw new Error("Clé Gemini refusée. Vérifie-la dans Réglages.");
-      if(r.status === 429){
-        const det = err.details || [], qf = det.find(d => /QuotaFailure/.test(d["@type"] || "")), ri = det.find(d => /RetryInfo/.test(d["@type"] || ""));
-        const vio = (qf && qf.violations) || [];
-        const zero = vio.some(v => String(v.quotaValue) === "0") || /limit: 0\b/.test(msg);
-        const daily = vio.some(v => /PerDay/i.test(v.quotaId || "")) || (!vio.length && /per day|daily/i.test(msg));
-        const delay = ri && ri.retryDelay ? parseFloat(ri.retryDelay) * 1000 : 60e3;
-        if(zero){ skipSet(model, 7*864e5, "pas dans l'offre gratuite"); fails.push(`${shortName(model)} : pas gratuit`); }
-        else if(daily){ skipSet(model, untilReset(), "quota du jour"); fails.push(`${shortName(model)} : quota du jour`); quotaDay++; }
-        else { skipSet(model, Math.max(delay, 15e3) + 2e3, "trop de requêtes à la minute"); fails.push(`${shortName(model)} : trop de requêtes, attends 1 min`); }
-        continue;
+      if(!r.ok){
+        let err = {}; try { err = (await r.json()).error || {}; } catch(e){}
+        const msg = err.message || "";
+        if(r.status === 403 || (r.status === 400 && /API key/i.test(msg))) return { fatal: "Clé Gemini refusée. Vérifie-la dans Réglages.", msg, status: r.status };
+        if(r.status === 429){
+          const det = err.details || [], qf = det.find(d => /QuotaFailure/.test(d["@type"] || "")), ri = det.find(d => /RetryInfo/.test(d["@type"] || ""));
+          const vio = (qf && qf.violations) || [];
+          const zero = vio.some(v => String(v.quotaValue) === "0") || /limit: 0\b/.test(msg);
+          const daily = vio.some(v => /PerDay/i.test(v.quotaId || "")) || (!vio.length && /per day|daily/i.test(msg));
+          const delay = ri && ri.retryDelay ? parseFloat(ri.retryDelay) * 1000 : 60e3;
+          if(zero) return { fail: "pas gratuit", skip: [7*864e5, "pas dans l'offre gratuite"], msg, status: 429 };
+          if(daily) return { fail: "quota du jour", skip: [untilReset(), "quota du jour"], msg, status: 429, day: true };
+          return { fail: "trop de requêtes, attends 1 min", skip: [Math.max(delay, 15e3) + 2e3, "trop de requêtes à la minute"], msg, status: 429 };
+        }
+        if(r.status === 404) return { fail: "fermé", skip: [7*864e5, "fermé"], msg, status: 404 };
+        if([500, 502, 503, 504].includes(r.status)) return { fail: r.status === 503 ? "surchargé" : "erreur " + r.status, skip: [3*60e3, "surchargé"], msg, status: r.status };
+        return { fatal: "Erreur Gemini " + r.status + (msg ? " : " + msg.slice(0, 160) : ""), msg, status: r.status };
       }
-      if([404, 500, 503, 504].includes(r.status)){ skipSet(model, r.status === 404 ? 7*864e5 : 5*60e3, r.status === 404 ? "fermé" : "surchargé"); fails.push(`${shortName(model)} : ${r.status === 503 ? "surchargé" : r.status === 404 ? "fermé" : "erreur " + r.status}`); continue; }
-      throw new Error("Erreur Gemini " + r.status + (msg ? " : " + msg.slice(0, 160) : ""));
+      let j; try { j = await r.json(); } catch(e){ return { fail: "réponse coupée", msg: e.message }; }
+      useAdd(model);
+      const c = j.candidates && j.candidates[0];
+      const txt = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("");
+      if(!txt) return { fail: "réponse vide" + (c && c.finishReason ? " (" + c.finishReason + ")" : (j.promptFeedback && j.promptFeedback.blockReason ? " (" + j.promptFeedback.blockReason + ")" : "")), msg: "" };
+      if(o.schema){ try { return { val: JSON.parse(txt) }; } catch(e){ return { fail: "réponse illisible", msg: txt.slice(0, 120) }; } }
+      return { val: txt };
     }
-    const j = await r.json();
-    const c = j.candidates && j.candidates[0];
-    const txt = c && c.content && (c.content.parts || []).map(p => p.text || "").join("");
-    useAdd(model);
-    if(!txt){ fails.push(`${shortName(model)} : réponse vide${c && c.finishReason ? " (" + c.finishReason + ")" : ""}`); continue; }
-    gemCfg.lastModel = model; skipDel(model);
-    return o.schema ? JSON.parse(txt) : txt;
+    return { fail: "réglage refusé", msg: "" };
   }
-  if(!navigator.onLine) throw new Error("Pas de connexion internet.");
-  const st = gemStatus();
-  if(quotaDay && fails.every(f => /quota du jour|pas gratuit|fermé/.test(f))) throw new Error(`Quota Gemini gratuit du jour épuisé (${st.total} requêtes aujourd'hui). Il revient à ${st.reset}.`);
-  throw new Error("Gemini indisponible pour l'instant (" + fails.join(", ") + "). Réessaie dans une minute.");
+
+  return new Promise((resolve, reject) => {
+    let idx = 0, running = 0, done = false; const ctls = [];
+    const finish = () => {
+      done = true;
+      if(!navigator.onLine) return reject(new Error("Pas de connexion internet."));
+      const st = gemStatus();
+      if(quotaDay && fails.every(f => /quota du jour|pas gratuit|fermé/.test(f))) return reject(new Error(`Quota Gemini gratuit du jour épuisé (${st.total} requêtes aujourd'hui). Il revient à ${st.reset}.`));
+      reject(new Error("Gemini n'a pas répondu (" + fails.join(", ") + "). Réessaie dans une minute ; le détail est dans Réglages > Journal Gemini."));
+    };
+    const launch = () => {
+      if(done) return;
+      if(idx >= chain.length){ if(!running) finish(); return; }
+      const model = chain[idx++], ctl = new AbortController(); ctls.push(ctl); running++;
+      let timedOut = false;
+      const hard = setTimeout(() => { timedOut = true; ctl.abort(); }, HARD);
+      const hedge = setTimeout(() => { if(!done && running < 2) launch(); }, HEDGE);
+      const t0 = Date.now();
+      tryModel(model, ctl).then(res => {
+        clearTimeout(hard); clearTimeout(hedge); running--;
+        if(done) return;
+        if(res.val !== undefined){
+          done = true; ctls.forEach(c => c !== ctl && c.abort());
+          gemCfg.lastModel = model; gemCfg.lastMs = Date.now() - t0; skipDel(model);
+          const g = jget(GGOOD, {}); g[kind] = model; lsSet(GGOOD, JSON.stringify(g));
+          return resolve(res.val);
+        }
+        if(res.fatal){ done = true; ctls.forEach(c => c.abort()); logAdd(model, res.status || "erreur", res.msg || res.fatal); return reject(new Error(res.fatal)); }
+        let why = res.fail;
+        if(why === "abort"){ why = timedOut ? "pas de réponse en " + Math.round(HARD / 1000) + " s" : "annulé"; if(timedOut) skipSet(model, 3*60e3, "pas de réponse"); }
+        else if(res.skip) skipSet(model, res.skip[0], res.skip[1]);
+        if(res.day) quotaDay++;
+        fails.push(`${shortName(model)} : ${why}`);
+        logAdd(model, (res.status ? res.status + " " : "") + why, res.msg);
+        launch();
+      });
+    };
+    launch();
+  });
 }
+function gemLog(){ return jget(GLOG, []); }
 gemini.list = modelList;
 async function pickModel(key){
   try{
@@ -507,7 +551,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemShort: shortName, md, lastLoad, version: 24 };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemLog, gemShort: shortName, md, lastLoad, version: 25 };
 
 renderShell();
 })();
