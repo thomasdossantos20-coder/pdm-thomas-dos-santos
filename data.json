@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T13:14:41.201Z",
+ "updatedAt": "2026-11-25T13:15:38.496Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2442,6 +2442,41 @@
     "src": "off",
     "code": "3270160856060",
     "u": "ml"
+   }
+  ],
+  "2026-11-25": [
+   {
+    "id": "mmww5cdxca3lz",
+    "n": "Crème mascarpone (Tiramisu)",
+    "g": 100,
+    "k": 280,
+    "p": 4.5,
+    "c": 14,
+    "l": 23,
+    "m": "dej",
+    "src": "photo"
+   },
+   {
+    "id": "mmww5cdxc1w6m",
+    "n": "Nutella",
+    "g": 25,
+    "k": 540,
+    "p": 6.4,
+    "c": 57.6,
+    "l": 30.8,
+    "m": "dej",
+    "src": "photo"
+   },
+   {
+    "id": "mmww5cdxci2zj",
+    "n": "Spéculoos",
+    "g": 15,
+    "k": 480,
+    "p": 5.3,
+    "c": 72.7,
+    "l": 18.7,
+    "m": "dej",
+    "src": "photo"
    }
   ]
  },
