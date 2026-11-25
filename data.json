@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T08:39:55.360Z",
+ "updatedAt": "2026-11-25T13:14:41.201Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2495,11 +2495,12 @@
  "calTargets": {
   "kcalMin": 3000,
   "kcalMax": 3200,
-  "protMin": 145,
+  "protMin": 117,
   "kg": 73,
   "fat": 80,
   "carb": 425,
-  "v": 2
+  "v": 3,
+  "protMax": 146
  },
  "coach": {
   "notes": {
