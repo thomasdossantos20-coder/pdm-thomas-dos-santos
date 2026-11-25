@@ -970,8 +970,11 @@ function renderFoods(){
 /* maintien mesuré : apport moyen noté − variation de poids (7 700 kcal par kg), sur les 28 derniers jours */
 const FULL_DAY = 1500; /* en dessous, on considère que la journée n'a pas été entièrement notée */
 function tdeeCalc(){
-  const end = shiftDate(todayISO(), -1), start = shiftDate(end, -27);
-  const days = Object.keys(D.meals).filter(d => d >= start && d <= end).map(d => sum(D.meals[d]).kcal).filter(k => k >= FULL_DAY);
+  const end = shiftDate(todayISO(), -1);
+  const full = Object.keys(D.meals).filter(d => d >= shiftDate(end, -27) && d <= end && sum(D.meals[d]).kcal >= FULL_DAY).sort();
+  /* la période commence au 1er jour noté : une pause (blessure, opération, vacances) avant ne fausse pas le calcul */
+  const start = full[0] || end;
+  const days = full.map(d => sum(D.meals[d]).kcal);
   const ws = (D.weights || []).filter(w => w.date && w.kg && w.date >= shiftDate(start, -3) && w.date <= todayISO()).map(w => [new Date(w.date + "T12:00") / 864e5, +w.kg]);
   const span = ws.length ? Math.max(...ws.map(w => w[0])) - Math.min(...ws.map(w => w[0])) : 0;
   const res = { n: days.length, nw: ws.length, span: Math.round(span) };
@@ -985,13 +988,13 @@ function renderTdee(){
   const el = $("#tdee"); if(!el) return;
   const r = tdeeCalc();
   if(r.tdee == null){
-    el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3><p class="muted cal-hint" style="margin-top:4px">Calcul automatique dès qu'il y a assez de données sur 4 semaines : <b>${Math.min(r.n, 10)}/10</b> journées entièrement notées (au moins ${fmt(FULL_DAY)} kcal) et <b>${Math.min(r.nw, 3)}/3</b> pesées sur au moins 14 jours. En attendant, la cible vient de la formule (≈ 2 770 kcal de maintien).</p>`;
+    el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3><p class="muted cal-hint" style="margin-top:4px">Calcul automatique dès qu'il y a assez de données, à partir de ta 1re journée notée : <b>${Math.min(r.n, 10)}/10</b> journées entièrement notées (au moins ${fmt(FULL_DAY)} kcal) et <b>${Math.min(r.nw, 3)}/3</b> pesées sur au moins 14 jours. En attendant, la cible vient de la formule (≈ 2 770 kcal de maintien).</p>`;
     return;
   }
   const perMonth = r.slope * 30, target = Math.round((r.tdee + 300) / 50) * 50;
   el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3>
     <p style="margin:4px 0 0">≈ <b>${fmt(Math.round(r.tdee / 10) * 10)} kcal</b> par jour</p>
-    <p class="muted cal-hint" style="margin-top:2px">${r.n} jours notés à ${fmt(r.avg)} kcal en moyenne, poids ${perMonth >= 0 ? "+" : ""}${dec(perMonth)} kg/mois sur ${r.nw} pesées. Pour prendre ~1 kg par mois : ${fmt(target)} kcal minimum.</p>
+    <p class="muted cal-hint" style="margin-top:2px">${r.n} jours notés à ${fmt(r.avg)} kcal en moyenne, poids ${Math.abs(perMonth) < 0.05 ? "stable" : (perMonth > 0 ? "+" : "") + dec(perMonth) + " kg/mois"} sur ${r.nw} pesées. Pour prendre ~1 kg par mois : ${fmt(target)} kcal minimum.</p>
     ${target !== D.calTargets.kcalMin ? `<button class="btn ghost sm" type="button" data-act="tdee-apply" data-k="${target}" style="margin-top:8px">Passer à ${fmt(target)}–${fmt(target + 200)} kcal</button>` : ""}`;
 }
 function refreshData(){ renderTotals(); renderDay(); renderWeek(); renderFoods(); renderTdee(); }
