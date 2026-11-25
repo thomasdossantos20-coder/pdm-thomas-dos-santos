@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T16:45:52.382Z",
+ "updatedAt": "2026-11-25T21:46:50.945Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2612,6 +2612,28 @@
     "code": "8410076901026",
     "sv": 40,
     "svn": "bar"
+   },
+   {
+    "id": "mmwwnlsxtucgp",
+    "n": "Flan",
+    "g": 120,
+    "k": 125,
+    "p": 3.3,
+    "c": 16.7,
+    "l": 4.2,
+    "m": "din",
+    "src": "chat"
+   },
+   {
+    "id": "mmwwnlsxtzp70",
+    "n": "Tajine au veau",
+    "g": 400,
+    "k": 137.5,
+    "p": 8.8,
+    "c": 10,
+    "l": 6.3,
+    "m": "din",
+    "src": "chat"
    }
   ]
  },
