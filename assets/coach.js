@@ -82,7 +82,7 @@ function context(){
   const todayItems = ((D.meals || {})[todayISO()] || []).map(it => `${MEALS[it.m] || ""} : ${it.n} ${it.por ? "1 portion" : fmt(it.g) + " g"} (${fmt(it.k*it.g/100)} kcal, P ${dec(it.p*it.g/100)} g)`).join("\n");
   return `Date du jour : ${todayISO()}.
 Profil : ${pr.name || "Thomas"}, ${pr.heightCm || "?"} cm, en prise de masse. Objectif : ${pr.goalLabel || pr.goalKg + " kg"}${pr.longGoalKg ? ", long terme " + pr.longGoalKg + " kg" : ""}.
-Cibles nutrition : ${T.kcalMin}-${T.kcalMax} kcal/jour, protéines minimum ${T.protMin} g.
+Cibles nutrition : ${T.kcalMin}-${T.kcalMax} kcal/jour, protéines ${T.protMin} g, glucides ${T.carb || "?"} g, lipides ${T.fat || "?"} g par jour.
 Il s'entraîne dans deux salles (Paris et Courbevoie) dont les machines ne sont pas calibrées pareil : ne compare pas une charge de Paris avec une de Courbevoie.
 Programme actuel (${prog.title}, ${prog.subtitle || ""}) :
 ${progTxt}

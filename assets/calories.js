@@ -21,6 +21,9 @@ const D = P.data;
 D.meals = D.meals || {};
 D.customFoods = D.customFoods || [];
 D.calTargets = D.calTargets || { kcalMin: 3000, kcalMax: 3200, protMin: 130 };
+/* cibles par défaut : 73 kg, 2 g/kg de protéines, ~1,1 g/kg de lipides, le reste en glucides (calculé sur le minimum kcal) */
+const macroFor = (kg, kcal) => { const p = Math.round(kg * 2 / 5) * 5, l = Math.round(kg * 1.1 / 5) * 5; return { protMin: p, fat: l, carb: Math.max(0, Math.round((kcal - p * 4 - l * 9) / 4 / 5) * 5) }; };
+if(!D.calTargets.v){ Object.assign(D.calTargets, { kg: 73 }, macroFor(73, D.calTargets.kcalMin || 3000), { v: 2 }); P.save(); }
 
 /* ---------- utilitaires ---------- */
 const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/æ/g, "ae").trim();
@@ -330,7 +333,12 @@ function render(){
       <form id="goals" class="form-row" style="margin-top:14px">
         <label class="f">Kcal min<input name="kmin" inputmode="numeric" value="${D.calTargets.kcalMin}"></label>
         <label class="f">Kcal max<input name="kmax" inputmode="numeric" value="${D.calTargets.kcalMax}"></label>
-        <label class="f">Protéines min (g)<input name="pmin" inputmode="numeric" value="${D.calTargets.protMin}"></label>
+        <label class="f">Protéines (g)<input name="pmin" inputmode="numeric" value="${D.calTargets.protMin}"></label>
+        <label class="f">Glucides (g)<input name="carb" inputmode="numeric" value="${D.calTargets.carb}"></label>
+        <label class="f">Lipides (g)<input name="fat" inputmode="numeric" value="${D.calTargets.fat}"></label>
+        <label class="f">Poids de référence (kg)<input name="kg" inputmode="decimal" value="${String(D.calTargets.kg || 73).replace(".", ",")}"></label>
+        <button class="btn ghost" type="button" data-act="macro-calc" style="grid-column:1/-1">Recalculer depuis le poids</button>
+        <p class="muted cal-hint" style="grid-column:1/-1;margin:0">Protéines 2 g/kg, lipides ~1,1 g/kg, glucides = le reste du minimum kcal.</p>
         <button class="btn" type="submit">Enregistrer</button>
       </form>
       <div id="foods"></div>
@@ -344,7 +352,8 @@ function renderTotals(){
   const t = sum(D.meals[state.date] || []), T = D.calTargets;
   const C = 2 * Math.PI * 52, pct = Math.min(1, t.kcal / T.kcalMin), left = T.kcalMin - t.kcal;
   const status = t.kcal === 0 ? "Rien noté pour l'instant." : left > 0 ? `Encore <b>${fmt(left)} kcal</b> pour ton minimum.` : t.kcal <= T.kcalMax ? "<b>Objectif atteint.</b>" : `<b>${fmt(t.kcal - T.kcalMax)} kcal</b> au-dessus de ${fmt(T.kcalMax)}.`;
-  const pp = Math.min(100, t.p / T.protMin * 100);
+  const bar = (lab, v, goal, cls) => { const ok = v >= goal, w = goal ? Math.min(100, v / goal * 100) : 0;
+    return `<div class="cd-mac ${cls}"><span>${lab}</span><b class="${ok ? "ok" : ""}">${fmt(v)}<small> / ${fmt(goal)} g</small></b><i><em style="width:${w}%"${ok ? ' class="ok"' : ""}></em></i></div>`; };
   $("#tot").innerHTML = `
     <div class="cd-ring${t.kcal >= T.kcalMin ? " ok" : ""}" role="img" aria-label="${fmt(t.kcal)} kcal sur ${fmt(T.kcalMin)}">
       <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="tr"/><circle cx="60" cy="60" r="52" class="pg" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(1)}"/></svg>
@@ -352,8 +361,7 @@ function renderTotals(){
     </div>
     <div class="cd-side">
       <p class="cd-left">${status}</p>
-      <div class="cd-mac"><span>Protéines</span><b class="${t.p >= T.protMin ? "ok" : ""}">${fmt(t.p)}<small> / ${T.protMin} g</small></b><i><em style="width:${pp}%"${t.p >= T.protMin ? ' class="ok"' : ""}></em></i></div>
-      <div class="cd-mac2"><span>Glucides <b>${fmt(t.c)} g</b></span><span>Lipides <b>${fmt(t.l)} g</b></span></div>
+      ${bar("Protéines", t.p, T.protMin, "p")}${bar("Glucides", t.c, T.carb, "c")}${bar("Lipides", t.l, T.fat, "l")}
     </div>`;
 }
 
@@ -883,7 +891,7 @@ function renderDay(){
     const items = day.filter(it => (it.m || "dej") === k), t = sum(items);
     const prev = items.length ? [] : y.filter(it => (it.m || "dej") === k);
     return `<section class="panel cd-meal" aria-label="${l}">
-      <header><div><h3>${l}</h3>${items.length ? `<span>${fmt(t.kcal)} kcal · ${fmt(t.p)} g prot.</span>` : ""}</div>
+      <header><div><h3>${l}</h3>${items.length ? `<span>${fmt(t.kcal)} kcal · P ${fmt(t.p)} · G ${fmt(t.c)} · L ${fmt(t.l)}</span>` : ""}</div>
         <button type="button" class="cd-plus" data-add-meal="${k}" aria-label="Ajouter au ${esc(l.toLowerCase())}">+</button></header>
       ${items.length ? `<ul class="cd-items">${items.map(it => `<li><button type="button" class="cd-row" data-it="${it.id}"><span>${esc(it.n)}<small>${esc(qtyTxt(it))}${srcTag(it)}</small></span><b>${fmt(forQty(it).kcal)}</b></button></li>`).join("")}</ul>`
         : prev.length ? `<button type="button" class="cd-copy" data-copy="${k}"><span>Comme hier</span><small>${esc(prev.map(x => x.n.split(" · ")[0]).slice(0, 3).join(", "))}${prev.length > 3 ? "…" : ""} · ${fmt(sum(prev).kcal)} kcal</small></button>` : ""}
@@ -1030,9 +1038,9 @@ function bindStatic(){
   $("#cal-day").onchange = e => { if(e.target.value){ state.date = e.target.value; render(); } };
   $("#goals").onsubmit = e => {
     e.preventDefault(); const c = e.target;
-    const kmin = num(c.kmin.value), kmax = num(c.kmax.value), pmin = num(c.pmin.value);
-    if(!(kmin && kmax && kmax >= kmin && pmin)){ toast("Objectifs invalides"); return; }
-    D.calTargets = { kcalMin: kmin, kcalMax: kmax, protMin: pmin }; P.save("Objectifs enregistrés"); refreshData();
+    const kmin = num(c.kmin.value), kmax = num(c.kmax.value), pmin = num(c.pmin.value), carb = num(c.carb.value), fat = num(c.fat.value), kg = num(c.kg.value);
+    if(!(kmin && kmax && kmax >= kmin && pmin && carb != null && fat != null)){ toast("Objectifs invalides"); return; }
+    D.calTargets = { kcalMin: kmin, kcalMax: kmax, protMin: pmin, carb, fat, kg: kg || D.calTargets.kg, v: 2 }; P.save("Objectifs enregistrés"); refreshData();
   };
   const qp = $("[data-qphoto]", root);
   qp.onchange = e => { const file = e.target.files[0]; e.target.value = ""; if(!file) return; openAdd("photo", mealNow()); handlePhoto(file); };
@@ -1053,6 +1061,9 @@ function bindStatic(){
     const a = b.dataset.act;
     if(a === "day"){ state.date = shiftDate(state.date, +b.dataset.d); render(); }
     if(a === "today"){ state.date = todayISO(); render(); }
+    if(a === "macro-calc"){ const c = $("#goals"), kg = num(c.kg.value), kmin = num(c.kmin.value);
+      if(!(kg > 30 && kmin > 0)){ toast("Poids ou kcal min invalide"); return; }
+      const m = macroFor(kg, kmin); c.pmin.value = m.protMin; c.carb.value = m.carb; c.fat.value = m.fat; toast("Recalculé : vérifie puis Enregistrer"); }
     if(a === "del-food"){
       const fd = D.customFoods[+b.dataset.i];
       if(confirm(`Retirer « ${fd.n} » de tes aliments enregistrés ?`)){ D.customFoods.splice(+b.dataset.i, 1); P.save("Aliment retiré"); renderFoods(); }
