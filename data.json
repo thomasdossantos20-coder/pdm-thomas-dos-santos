@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T13:17:49.405Z",
+ "updatedAt": "2026-11-25T16:45:52.382Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2598,10 +2598,33 @@
     "l": 0.3,
     "m": "dej",
     "src": "chat"
+   },
+   {
+    "id": "mmwwcuqv2p1ll",
+    "n": "Barre céréales Protéines peanut& chocolat🍫 · Nature Valley",
+    "g": 40,
+    "k": 428.6,
+    "p": 25.6,
+    "c": 22.9,
+    "l": 30.1,
+    "m": "col",
+    "src": "off",
+    "code": "8410076901026",
+    "sv": 40,
+    "svn": "bar"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "Barre céréales Protéines peanut& chocolat🍫 · Nature Valley",
+   "k": 428.6,
+   "p": 25.6,
+   "c": 22.9,
+   "l": 30.1,
+   "code": "8410076901026",
+   "serving": 40
+  },
   {
    "n": "Amandes grillées salées",
    "k": 641,
