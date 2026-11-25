@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T13:17:02.259Z",
+ "updatedAt": "2026-11-25T13:17:49.405Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2519,6 +2519,83 @@
     "p": 4.5,
     "c": 14,
     "l": 23,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xoz9gp",
+    "n": "Lait d'avoine",
+    "g": 200,
+    "k": 45,
+    "p": 1,
+    "c": 6.5,
+    "l": 1.5,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xozfqf",
+    "n": "Eau",
+    "g": 50,
+    "k": 0,
+    "p": 0,
+    "c": 0,
+    "l": 0,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xob0p5",
+    "n": "Whey",
+    "g": 30,
+    "k": 380,
+    "p": 80,
+    "c": 6.7,
+    "l": 3.3,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xoh73p",
+    "n": "Miel",
+    "g": 15,
+    "k": 300,
+    "p": 0,
+    "c": 80,
+    "l": 0,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xop8xo",
+    "n": "Beurre de cacahuète",
+    "g": 15,
+    "k": 600,
+    "p": 25,
+    "c": 15,
+    "l": 50,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xofc89",
+    "n": "Huile de colza",
+    "g": 10,
+    "k": 900,
+    "p": 0,
+    "c": 0,
+    "l": 100,
+    "m": "dej",
+    "src": "chat"
+   },
+   {
+    "id": "mmww5f6xo4lig",
+    "n": "Banane",
+    "g": 120,
+    "k": 90,
+    "p": 1.1,
+    "c": 20,
+    "l": 0.3,
     "m": "dej",
     "src": "chat"
    }
