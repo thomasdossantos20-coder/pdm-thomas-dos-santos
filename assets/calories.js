@@ -988,7 +988,7 @@ function renderTdee(){
   const el = $("#tdee"); if(!el) return;
   const r = tdeeCalc();
   if(r.tdee == null){
-    el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3><p class="muted cal-hint" style="margin-top:4px">Calcul automatique dès qu'il y a assez de données, à partir de ta 1re journée notée : <b>${Math.min(r.n, 10)}/10</b> journées entièrement notées (au moins ${fmt(FULL_DAY)} kcal) et <b>${Math.min(r.nw, 3)}/3</b> pesées sur au moins 14 jours. En attendant, la cible vient de la formule (≈ 2 770 kcal de maintien).</p>`;
+    el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3><p class="muted cal-hint" style="margin-top:4px">Calcul automatique dès qu'il y a assez de données, à partir de ta 1re journée notée : <b>${Math.min(r.n, 10)}/10</b> journées entièrement notées (au moins ${fmt(FULL_DAY)} kcal) et <b>${Math.min(r.nw, 3)}/3</b> pesées sur au moins 14 jours. En attendant, la cible vient de la formule (≈ 2 650 kcal de maintien : base 1 785 + digestion + vie courante + 8-9k pas + 4 séances).</p>`;
     return;
   }
   const perMonth = r.slope * 30, target = Math.round((r.tdee + 300) / 50) * 50;
