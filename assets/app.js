@@ -551,7 +551,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemLog, gemShort: shortName, md, lastLoad, version: 26 };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemLog, gemShort: shortName, md, lastLoad, version: 27 };
 
 renderShell();
 })();

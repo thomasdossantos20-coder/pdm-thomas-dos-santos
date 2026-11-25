@@ -22,8 +22,10 @@ D.meals = D.meals || {};
 D.customFoods = D.customFoods || [];
 D.calTargets = D.calTargets || { kcalMin: 3000, kcalMax: 3200, protMin: 130 };
 /* cibles par défaut : 73 kg, 2 g/kg de protéines, ~1,1 g/kg de lipides, le reste en glucides (calculé sur le minimum kcal) */
-const macroFor = (kg, kcal) => { const p = Math.round(kg * 2 / 5) * 5, l = Math.round(kg * 1.1 / 5) * 5; return { protMin: p, fat: l, carb: Math.max(0, Math.round((kcal - p * 4 - l * 9) / 4 / 5) * 5) }; };
-if(!D.calTargets.v){ Object.assign(D.calTargets, { kg: 73 }, macroFor(73, D.calTargets.kcalMin || 3000), { v: 2 }); P.save(); }
+/* protéines : réussi dès 1,6 g/kg (plateau moyen des études), visée 2 g/kg */
+const macroFor = (kg, kcal) => { const p = Math.round(kg * 2), l = Math.round(kg * 1.1 / 5) * 5;
+  return { protMin: Math.round(kg * 1.6), protMax: p, fat: l, carb: Math.max(0, Math.round((kcal - p * 4 - l * 9) / 4 / 5) * 5) }; };
+if(!(D.calTargets.v >= 3)){ Object.assign(D.calTargets, { kg: D.calTargets.kg || 73 }, macroFor(D.calTargets.kg || 73, D.calTargets.kcalMin || 3000), { v: 3 }); P.save(); }
 
 /* ---------- utilitaires ---------- */
 const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/æ/g, "ae").trim();
@@ -333,18 +335,20 @@ function render(){
       <form id="goals" class="form-row" style="margin-top:14px">
         <label class="f">Kcal min<input name="kmin" inputmode="numeric" value="${D.calTargets.kcalMin}"></label>
         <label class="f">Kcal max<input name="kmax" inputmode="numeric" value="${D.calTargets.kcalMax}"></label>
-        <label class="f">Protéines (g)<input name="pmin" inputmode="numeric" value="${D.calTargets.protMin}"></label>
+        <label class="f">Protéines : réussi dès (g)<input name="pmin" inputmode="numeric" value="${D.calTargets.protMin}"></label>
+        <label class="f">Protéines : visée (g)<input name="pmax" inputmode="numeric" value="${D.calTargets.protMax || D.calTargets.protMin}"></label>
         <label class="f">Glucides (g)<input name="carb" inputmode="numeric" value="${D.calTargets.carb}"></label>
         <label class="f">Lipides (g)<input name="fat" inputmode="numeric" value="${D.calTargets.fat}"></label>
         <label class="f">Poids de référence (kg)<input name="kg" inputmode="decimal" value="${String(D.calTargets.kg || 73).replace(".", ",")}"></label>
         <button class="btn ghost" type="button" data-act="macro-calc" style="grid-column:1/-1">Recalculer depuis le poids</button>
-        <p class="muted cal-hint" style="grid-column:1/-1;margin:0">Protéines 2 g/kg, lipides ~1,1 g/kg, glucides = le reste du minimum kcal.</p>
+        <p class="muted cal-hint" style="grid-column:1/-1;margin:0">Protéines 1,6 à 2 g/kg, lipides ~1,1 g/kg, glucides = le reste du minimum kcal. Une journée compte comme réussie dès le minimum.</p>
         <button class="btn" type="submit">Enregistrer</button>
       </form>
+      <div id="tdee" class="cd-tdee"></div>
       <div id="foods"></div>
     </details>
   </section>`;
-  renderTotals(); renderDay(); renderWeek(); renderFoods();
+  renderTotals(); renderDay(); renderWeek(); renderFoods(); renderTdee();
   bindStatic();
 }
 
@@ -361,7 +365,8 @@ function renderTotals(){
     </div>
     <div class="cd-side">
       <p class="cd-left">${status}</p>
-      ${bar("Protéines", t.p, T.protMin, "p")}${bar("Glucides", t.c, T.carb, "c")}${bar("Lipides", t.l, T.fat, "l")}
+      <div class="cd-mac p"><span>Protéines</span><b class="${t.p >= T.protMin ? "ok" : ""}">${fmt(t.p)}<small> / ${T.protMin}–${T.protMax || T.protMin} g</small></b><i><em style="width:${Math.min(100, t.p / (T.protMax || T.protMin) * 100)}%"${t.p >= T.protMin ? ' class="ok"' : ""}></em><u style="left:${T.protMin / (T.protMax || T.protMin) * 100}%"></u></i></div>
+      ${bar("Glucides", t.c, T.carb, "c")}${bar("Lipides", t.l, T.fat, "l")}
     </div>`;
 }
 
@@ -962,7 +967,34 @@ function renderWeek(){
 function renderFoods(){
   $("#foods").innerHTML = D.customFoods.length ? `<h3 style="margin-top:18px">Tes aliments enregistrés</h3><div class="chips" style="margin-top:8px">${D.customFoods.map((f,i) => `<span class="chip">${esc(f.n)} <small>${fmt(f.k)} kcal/100 g</small><button data-act="del-food" data-i="${i}" aria-label="Supprimer ${esc(f.n)}">×</button></span>`).join("")}</div>` : `<p class="muted" style="margin-top:14px">Les aliments estimés par Gemini, scannés ou saisis à la main s'enregistrent ici.</p>`;
 }
-function refreshData(){ renderTotals(); renderDay(); renderWeek(); renderFoods(); }
+/* maintien mesuré : apport moyen noté − variation de poids (7 700 kcal par kg), sur les 28 derniers jours */
+const FULL_DAY = 1500; /* en dessous, on considère que la journée n'a pas été entièrement notée */
+function tdeeCalc(){
+  const end = shiftDate(todayISO(), -1), start = shiftDate(end, -27);
+  const days = Object.keys(D.meals).filter(d => d >= start && d <= end).map(d => sum(D.meals[d]).kcal).filter(k => k >= FULL_DAY);
+  const ws = (D.weights || []).filter(w => w.date && w.kg && w.date >= shiftDate(start, -3) && w.date <= todayISO()).map(w => [new Date(w.date + "T12:00") / 864e5, +w.kg]);
+  const span = ws.length ? Math.max(...ws.map(w => w[0])) - Math.min(...ws.map(w => w[0])) : 0;
+  const res = { n: days.length, nw: ws.length, span: Math.round(span) };
+  if(days.length < 10 || ws.length < 3 || span < 14) return res;
+  const mx = ws.reduce((a, w) => a + w[0], 0) / ws.length, my = ws.reduce((a, w) => a + w[1], 0) / ws.length;
+  const slope = ws.reduce((a, w) => a + (w[0] - mx) * (w[1] - my), 0) / ws.reduce((a, w) => a + (w[0] - mx) ** 2, 0); /* kg par jour */
+  const avg = days.reduce((a, b) => a + b, 0) / days.length;
+  return { ...res, avg, slope, tdee: avg - slope * 7700 };
+}
+function renderTdee(){
+  const el = $("#tdee"); if(!el) return;
+  const r = tdeeCalc();
+  if(r.tdee == null){
+    el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3><p class="muted cal-hint" style="margin-top:4px">Calcul automatique dès qu'il y a assez de données sur 4 semaines : <b>${Math.min(r.n, 10)}/10</b> journées entièrement notées (au moins ${fmt(FULL_DAY)} kcal) et <b>${Math.min(r.nw, 3)}/3</b> pesées sur au moins 14 jours. En attendant, la cible vient de la formule (≈ 2 770 kcal de maintien).</p>`;
+    return;
+  }
+  const perMonth = r.slope * 30, target = Math.round((r.tdee + 300) / 50) * 50;
+  el.innerHTML = `<h3 class="cal-sub">Ton maintien mesuré</h3>
+    <p style="margin:4px 0 0">≈ <b>${fmt(Math.round(r.tdee / 10) * 10)} kcal</b> par jour</p>
+    <p class="muted cal-hint" style="margin-top:2px">${r.n} jours notés à ${fmt(r.avg)} kcal en moyenne, poids ${perMonth >= 0 ? "+" : ""}${dec(perMonth)} kg/mois sur ${r.nw} pesées. Pour prendre ~1 kg par mois : ${fmt(target)} kcal minimum.</p>
+    ${target !== D.calTargets.kcalMin ? `<button class="btn ghost sm" type="button" data-act="tdee-apply" data-k="${target}" style="margin-top:8px">Passer à ${fmt(target)}–${fmt(target + 200)} kcal</button>` : ""}`;
+}
+function refreshData(){ renderTotals(); renderDay(); renderWeek(); renderFoods(); renderTdee(); }
 
 /* ---------- actions ---------- */
 function addItems(items){
@@ -1038,9 +1070,9 @@ function bindStatic(){
   $("#cal-day").onchange = e => { if(e.target.value){ state.date = e.target.value; render(); } };
   $("#goals").onsubmit = e => {
     e.preventDefault(); const c = e.target;
-    const kmin = num(c.kmin.value), kmax = num(c.kmax.value), pmin = num(c.pmin.value), carb = num(c.carb.value), fat = num(c.fat.value), kg = num(c.kg.value);
-    if(!(kmin && kmax && kmax >= kmin && pmin && carb != null && fat != null)){ toast("Objectifs invalides"); return; }
-    D.calTargets = { kcalMin: kmin, kcalMax: kmax, protMin: pmin, carb, fat, kg: kg || D.calTargets.kg, v: 2 }; P.save("Objectifs enregistrés"); refreshData();
+    const kmin = num(c.kmin.value), kmax = num(c.kmax.value), pmin = num(c.pmin.value), pmax = num(c.pmax.value), carb = num(c.carb.value), fat = num(c.fat.value), kg = num(c.kg.value);
+    if(!(kmin && kmax && kmax >= kmin && pmin && pmax >= pmin && carb != null && fat != null)){ toast("Objectifs invalides"); return; }
+    D.calTargets = { kcalMin: kmin, kcalMax: kmax, protMin: pmin, protMax: pmax, carb, fat, kg: kg || D.calTargets.kg, v: 3 }; P.save("Objectifs enregistrés"); refreshData();
   };
   const qp = $("[data-qphoto]", root);
   qp.onchange = e => { const file = e.target.files[0]; e.target.value = ""; if(!file) return; openAdd("photo", mealNow()); handlePhoto(file); };
@@ -1061,9 +1093,11 @@ function bindStatic(){
     const a = b.dataset.act;
     if(a === "day"){ state.date = shiftDate(state.date, +b.dataset.d); render(); }
     if(a === "today"){ state.date = todayISO(); render(); }
+    if(a === "tdee-apply"){ const k = +b.dataset.k, T = D.calTargets;
+      Object.assign(T, { kcalMin: k, kcalMax: k + 200 }, { carb: macroFor(T.kg || 73, k).carb }); P.save(`Objectif : ${fmt(k)}–${fmt(k + 200)} kcal`); render(); return; }
     if(a === "macro-calc"){ const c = $("#goals"), kg = num(c.kg.value), kmin = num(c.kmin.value);
       if(!(kg > 30 && kmin > 0)){ toast("Poids ou kcal min invalide"); return; }
-      const m = macroFor(kg, kmin); c.pmin.value = m.protMin; c.carb.value = m.carb; c.fat.value = m.fat; toast("Recalculé : vérifie puis Enregistrer"); }
+      const m = macroFor(kg, kmin); c.pmin.value = m.protMin; c.pmax.value = m.protMax; c.carb.value = m.carb; c.fat.value = m.fat; toast("Recalculé : vérifie puis Enregistrer"); }
     if(a === "del-food"){
       const fd = D.customFoods[+b.dataset.i];
       if(confirm(`Retirer « ${fd.n} » de tes aliments enregistrés ?`)){ D.customFoods.splice(+b.dataset.i, 1); P.save("Aliment retiré"); renderFoods(); }

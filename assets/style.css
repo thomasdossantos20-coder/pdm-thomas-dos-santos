@@ -773,6 +773,9 @@ html.yk-lock,html.yk-lock body{overflow:hidden}
 .cd-mac em{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#4b86ff,#86b8ff);transition:width .5s}
 .cd-mac em.ok{background:var(--leaf)}
 .cd-mac + .cd-mac{margin-top:8px}
+.cd-mac i{position:relative}
+.cd-mac i u{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.55);border-radius:2px}
+.cd-tdee{margin-top:18px;padding-top:14px;border-top:1px solid var(--glass-line)}
 .cd-mac.c em{background:linear-gradient(90deg,var(--flame-lo),var(--flame-hi))}
 .cd-mac.l em{background:linear-gradient(90deg,#c99a1d,#f2c94c)}
 .cd-mac.c em.ok,.cd-mac.l em.ok{background:var(--leaf)}
