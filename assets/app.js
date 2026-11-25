@@ -419,7 +419,7 @@ async function gemini(o){
   if(!key){ const e = new Error("Ajoute ta clé Gemini dans Réglages."); e.code = "NOKEY"; throw e; }
   const kind = o.lite ? "txt" : "img";
   let base = await modelList(key);
-  if(o.lite) base = [...base.filter(m => /lite/.test(m)), ...base.filter(m => !/lite/.test(m))]; /* textes : Flash-Lite d'abord, les Flash restent pour les photos */
+  base = [...base.filter(m => /lite/.test(m)), ...base.filter(m => !/lite/.test(m))]; /* Flash-Lite d'abord (rapide, 500/jour) : les gros Flash restent en relais, ils lâchent souvent (pas de réponse) */
   const good = jget(GGOOD, {})[kind];
   if(good && base.includes(good)) base = [good, ...base.filter(m => m !== good)];
   const all = [...new Set([gemCfg.model, ...base].filter(Boolean))], sk = skipGet(), now = Date.now();
@@ -436,7 +436,7 @@ async function gemini(o){
   const plain = JSON.stringify(body);
   const payloadFor = m => { const t = thinkFor(m); return t && !NOTHINK_KO.has(m) ? JSON.stringify({ ...body, generationConfig: { ...gc, thinkingConfig: t } }) : plain; };
   const img = !o.lite && (o.parts || []).some(p => p.inline_data);
-  const HEDGE = img ? 12000 : 8000, HARD = img ? 45000 : 30000; /* au bout de HEDGE sans réponse, un 2e modèle est lancé en parallèle */
+  const HEDGE = img ? 9000 : 8000, HARD = img ? 35000 : 30000; /* au bout de HEDGE sans réponse, un 2e modèle est lancé en parallèle */
   const fails = []; let quotaDay = 0;
 
   async function tryModel(model, ctl){
@@ -508,7 +508,7 @@ async function gemini(o){
         }
         if(res.fatal){ done = true; ctls.forEach(c => c.abort()); logAdd(model, res.status || "erreur", res.msg || res.fatal); return reject(new Error(res.fatal)); }
         let why = res.fail;
-        if(why === "abort"){ why = timedOut ? "pas de réponse en " + Math.round(HARD / 1000) + " s" : "annulé"; if(timedOut) skipSet(model, 3*60e3, "pas de réponse"); }
+        if(why === "abort"){ why = timedOut ? "pas de réponse en " + Math.round(HARD / 1000) + " s" : "annulé"; if(timedOut) skipSet(model, 20*60e3, "pas de réponse"); }
         else if(res.skip) skipSet(model, res.skip[0], res.skip[1]);
         if(res.day) quotaDay++;
         fails.push(`${shortName(model)} : ${why}`);
@@ -551,7 +551,7 @@ function md(t){
 window.PDM = { $, $$, esc, uid, num, fmtKg, fmtLoad, fmtDelta, fmtDate, fmtDateShort, todayISO, daysBetween, toast,
   getCfg, setCfg, load, save, pushRemote, fetchRemote, weightsAsc, withDeltas, rollingAvg, renderProgram, leaves,
   get data(){ return DATA; }, set data(v){ DATA = v; },
-  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemLog, gemShort: shortName, md, lastLoad, version: 29 };
+  resetRemoteSha(){ remoteSha = null; }, setSync, gemini, gemCfg, gemStatus, gemLog, gemShort: shortName, md, lastLoad, version: 30 };
 
 renderShell();
 })();
