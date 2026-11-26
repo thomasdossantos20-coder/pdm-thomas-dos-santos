@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-26T07:13:22.228Z",
+ "updatedAt": "2026-11-26T07:13:44.854Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2649,10 +2649,34 @@
     "src": "off",
     "code": "3229820804200",
     "u": "ml"
+   },
+   {
+    "id": "mmwx7uu8lu8wa",
+    "n": "LION protéines · Nestlé",
+    "g": 50,
+    "k": 405,
+    "p": 15,
+    "c": 67.6,
+    "l": 6.9,
+    "m": "pdj",
+    "src": "off",
+    "code": "8445292269520",
+    "sv": 60,
+    "svn": "portion",
+    "u": "ml"
    }
   ]
  },
  "customFoods": [
+  {
+   "n": "LION protéines · Nestlé",
+   "k": 405,
+   "p": 15,
+   "c": 67.6,
+   "l": 6.9,
+   "code": "8445292269520",
+   "serving": 50
+  },
   {
    "n": "Soja Protéines · Bjorg",
    "k": 58,
