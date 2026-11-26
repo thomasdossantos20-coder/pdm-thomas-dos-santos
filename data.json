@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-25T21:46:50.945Z",
+ "updatedAt": "2026-11-26T07:13:22.228Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -2635,9 +2635,33 @@
     "m": "din",
     "src": "chat"
    }
+  ],
+  "2026-11-26": [
+   {
+    "id": "mmwx7ucs3podr",
+    "n": "Soja Protéines · Bjorg",
+    "g": 200,
+    "k": 58,
+    "p": 5.2,
+    "c": 2.7,
+    "l": 2.6,
+    "m": "pdj",
+    "src": "off",
+    "code": "3229820804200",
+    "u": "ml"
+   }
   ]
  },
  "customFoods": [
+  {
+   "n": "Soja Protéines · Bjorg",
+   "k": 58,
+   "p": 5.2,
+   "c": 2.7,
+   "l": 2.6,
+   "code": "3229820804200",
+   "serving": 200
+  },
   {
    "n": "Barre céréales Protéines peanut& chocolat🍫 · Nature Valley",
    "k": 428.6,
