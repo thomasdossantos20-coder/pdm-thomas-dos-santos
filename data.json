@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-27T17:31:17.405Z",
+ "updatedAt": "2026-11-27T17:42:11.656Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1054,6 +1054,11 @@
          "v": 42.5,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 45,
+         "gym": "Courbevoie",
+         "date": "2026-11-27"
         }
        ],
        "note": "45 en dégressif, bien échauffé avant sinon crampe"
