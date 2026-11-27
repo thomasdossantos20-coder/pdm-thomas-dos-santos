@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-27T18:07:33.504Z",
+ "updatedAt": "2026-11-27T18:07:38.696Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1127,6 +1127,11 @@
          "v": 40,
          "gym": "Paris",
          "date": null
+        },
+        {
+         "v": 45,
+         "gym": "Courbevoie",
+         "date": "2026-11-27"
         }
        ],
        "note": "Faire 45 bien contrôler attention",
