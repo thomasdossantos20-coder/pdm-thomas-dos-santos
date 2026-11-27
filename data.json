@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-26T17:34:26.188Z",
+ "updatedAt": "2026-11-27T17:30:53.846Z",
  "profile": {
   "name": "Thomas",
   "heightCm": 184,
@@ -1010,6 +1010,11 @@
          "v": 170,
          "gym": null,
          "date": null
+        },
+        {
+         "v": 180,
+         "gym": "Courbevoie",
+         "date": "2026-11-27"
         }
        ],
        "note": "Faire 180 même si c'est 5 reps"
